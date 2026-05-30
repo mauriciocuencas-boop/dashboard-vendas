@@ -1708,4 +1708,519 @@
               <label class="input-label"><span class="input-label-dot" style="--label-color: var(--plano)"></span>Plano Ação</label>
               <input type="number" min="0" data-seller="${s.id}" data-field="planoAcao" value="${dayData[s.id].planoAcao || 0}" ${!editable ? 'disabled' : ''}>
             </div>
- 
+            <div class="input-field" style="--field-color: var(--venda); --field-color-soft: var(--venda-soft)">
+              <label class="input-label"><span class="input-label-dot" style="--label-color: var(--venda)"></span>Vendas</label>
+              <input type="number" min="0" data-seller="${s.id}" data-field="vendas" value="${dayData[s.id].vendas || 0}" ${!editable ? 'disabled' : ''}>
+            </div>
+            <div class="input-field" style="--field-color: var(--pink); --field-color-soft: var(--pink-soft)">
+              <label class="input-label"><span class="input-label-dot" style="--label-color: var(--pink)"></span>R$ (mil)</label>
+              <input type="number" min="0" step="0.1" data-seller="${s.id}" data-field="valor" value="${dayData[s.id].valor || 0}" ${!editable ? 'disabled' : ''}>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.querySelectorAll('.inputs-grid input:not(:disabled)').forEach(input => {
+      input.addEventListener('input', handleInputChange);
+      input.addEventListener('blur', handleInputBlur);
+    });
+    updateDaySummary();
+  }
+
+  function handleInputChange(e) {
+    const seller = e.target.dataset.seller;
+    const field = e.target.dataset.field;
+    const value = parseFloat(e.target.value) || 0;
+    if (!state.records[state.currentDate]) state.records[state.currentDate] = {};
+    if (!state.records[state.currentDate][seller]) state.records[state.currentDate][seller] = getEmptyRecord();
+    state.records[state.currentDate][seller][field] = value;
+    setSaveStatus('unsaved');
+    updateDaySummary();
+    renderCadenceCards();
+    renderFunnel();
+    renderSellers();
+  }
+
+  function handleInputBlur(e) {
+    clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(async () => {
+      const seller = e.target.dataset.seller;
+      const dayData = getDayData(state.currentDate);
+      await saveRecord(state.currentDate, seller, dayData[seller]);
+    }, 500);
+  }
+
+  function updateDaySummary() {
+    const dayData = getDayData(state.currentDate);
+    let diag = 0, plano = 0, vendas = 0, valor = 0;
+    SELLERS.forEach(s => {
+      diag += dayData[s.id].diagnosticos;
+      plano += dayData[s.id].planoAcao;
+      vendas += dayData[s.id].vendas;
+      valor += dayData[s.id].valor;
+    });
+    document.getElementById('daySummary').innerHTML = `
+      <div class="day-summary-item"><div class="day-summary-label">Diag</div><div class="day-summary-value" style="color: var(--diag)">${diag}</div></div>
+      <div class="day-summary-item"><div class="day-summary-label">Plano</div><div class="day-summary-value" style="color: var(--plano)">${plano}</div></div>
+      <div class="day-summary-item"><div class="day-summary-label">Vendas</div><div class="day-summary-value" style="color: var(--venda)">${vendas}</div></div>
+      <div class="day-summary-item"><div class="day-summary-label">R$</div><div class="day-summary-value" style="color: var(--pink)">${formatCurrency(valor * 1000)}</div></div>
+    `;
+  }
+
+  function renderRanking() {
+    const week = aggregateData(getWeekDates());
+    const ranking = SELLERS.map(s => ({ ...s, data: week[s.id] }))
+      .sort((a, b) => (b.data.diagnosticos + b.data.planoAcao) - (a.data.diagnosticos + a.data.planoAcao));
+
+    document.getElementById('rankingList').innerHTML = ranking.map((r, i) => {
+      const total = r.data.diagnosticos + r.data.planoAcao;
+      return `
+        <div class="ranking-item ${i === 0 && total > 0 ? 'gold' : ''}" style="--seller-color: ${r.color}">
+          <div class="ranking-position">0${i + 1}</div>
+          <div class="ranking-info">
+            <div class="ranking-name"><span class="ranking-dot"></span>${r.name}</div>
+            <div class="ranking-stats">
+              <div class="ranking-stat"><span class="ranking-stat-dot" style="background: var(--diag)"></span>${r.data.diagnosticos} diag</div>
+              <div class="ranking-stat"><span class="ranking-stat-dot" style="background: var(--plano)"></span>${r.data.planoAcao} plano</div>
+              <div class="ranking-stat"><span class="ranking-stat-dot" style="background: var(--venda)"></span>${r.data.vendas} venda${r.data.vendas !== 1 ? 's' : ''}</div>
+            </div>
+          </div>
+          <div>
+            <div class="ranking-value">${total}</div>
+            <div class="ranking-value-sub">reuniões</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderWeeklyComparison() {
+    const today = parseDate(state.currentDate);
+    const weeks = [];
+    for (let i = 3; i >= 0; i--) {
+      const ref = new Date(today); ref.setDate(ref.getDate() - (i * 7));
+      const start = getWeekStart(ref);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      const dates = getDatesInRange(start, end);
+      const data = sumTotals(aggregateData(dates));
+      weeks.push({
+        label: i === 0 ? 'Atual' : `−${i} sem`,
+        range: `${String(start.getDate()).padStart(2,'0')}/${String(start.getMonth()+1).padStart(2,'0')}`,
+        diag: data.diagnosticos, plano: data.planoAcao, vendas: data.vendas
+      });
+    }
+
+    const maxTotal = Math.max(...weeks.map(w => w.diag + w.plano + w.vendas), 1);
+    document.getElementById('weeklyComparison').innerHTML = weeks.map(w => {
+      const total = w.diag + w.plano + w.vendas;
+      const diagPct = (w.diag / maxTotal) * 100;
+      const planoPct = (w.plano / maxTotal) * 100;
+      const vendaPct = (w.vendas / maxTotal) * 100;
+      return `
+        <div class="week-bar">
+          <div>
+            <div class="week-label">${w.label}</div>
+            <div class="week-label-period">${w.range}</div>
+          </div>
+          <div class="week-bar-track">
+            <div class="week-bar-fill-diag" style="width: ${diagPct}%"></div>
+            <div class="week-bar-fill-plano" style="width: ${planoPct}%"></div>
+            <div class="week-bar-fill-venda" style="width: ${vendaPct}%"></div>
+          </div>
+          <div class="week-value">${total}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderAll() {
+    renderCadenceCards();
+    renderFunnel();
+    renderSellers();
+    renderRanking();
+    renderWeeklyComparison();
+  }
+
+  // ============================================
+  // 🔥 GERADORES DE RELATÓRIO PRO WHATSAPP
+  // ============================================
+  
+  function generateDayReport() {
+    const dayData = getDayData(state.currentDate);
+    const dateObj = parseDate(state.currentDate);
+    const weekDay = dateObj.toLocaleDateString('pt-BR', { weekday: 'long' });
+    const dateLabel = formatBR(dateObj);
+    
+    let totals = { diagnosticos: 0, planoAcao: 0, vendas: 0, valor: 0 };
+    SELLERS.forEach(s => FIELDS.forEach(f => totals[f] += dayData[s.id][f]));
+    
+    const totalReunioes = totals.diagnosticos + totals.planoAcao;
+    
+    let text = `🔥 *RESUMO DO DIA* 🔥\n`;
+    text += `📅 ${weekDay.charAt(0).toUpperCase() + weekDay.slice(1)}, ${dateLabel}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━\n\n`;
+    
+    text += `📊 *NÚMEROS DO DIA*\n\n`;
+    SELLERS.forEach(s => {
+      const d = dayData[s.id];
+      const r = d.diagnosticos + d.planoAcao;
+      if (r > 0 || d.vendas > 0 || d.valor > 0) {
+        text += `*${s.name.toUpperCase()}*\n`;
+        text += `🔵 ${d.diagnosticos} Diagnóstico${d.diagnosticos !== 1 ? 's' : ''}\n`;
+        text += `🟡 ${d.planoAcao} Plano${d.planoAcao !== 1 ? 's' : ''} de Ação\n`;
+        text += `🟢 ${d.vendas} Venda${d.vendas !== 1 ? 's' : ''}`;
+        if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
+        text += `\n\n`;
+      } else {
+        text += `*${s.name.toUpperCase()}* ⚪ Sem lançamento hoje\n\n`;
+      }
+    });
+    
+    text += `━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🎯 *TOTAL DA EQUIPE*\n\n`;
+    text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
+    text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
+    text += `📞 Reuniões totais: *${totalReunioes}*\n`;
+    text += `🟢 Vendas: *${totals.vendas}*\n`;
+    if (totals.valor > 0) text += `💰 Faturamento: *${formatBRMoney(totals.valor * 1000)}*\n`;
+    
+    text += `\n🚀 Bora pra cima!`;
+    
+    return text;
+  }
+  
+  function generateWeekReport() {
+    const today = parseDate(state.currentDate);
+    const weekStart = getWeekStart(today);
+    const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+    const dates = getDatesInRange(weekStart, weekEnd);
+    const data = aggregateData(dates);
+    const totals = sumTotals(data);
+    const daysWorked = countDaysWithRecords(dates) || 1;
+    
+    const totalReunioes = totals.diagnosticos + totals.planoAcao;
+    const convDiagPlano = totals.diagnosticos > 0 ? Math.round((totals.planoAcao / totals.diagnosticos) * 100) : 0;
+    const convPlanoVenda = totals.planoAcao > 0 ? Math.round((totals.vendas / totals.planoAcao) * 100) : 0;
+    const convTotal = totals.diagnosticos > 0 ? Math.round((totals.vendas / totals.diagnosticos) * 100) : 0;
+    
+    const mediaDiag = (totals.diagnosticos / daysWorked).toFixed(1);
+    const mediaPlano = (totals.planoAcao / daysWorked).toFixed(1);
+    const mediaReunioes = (totalReunioes / daysWorked).toFixed(1);
+    const ticketMedio = totals.vendas > 0 ? (totals.valor / totals.vendas) : 0;
+    
+    let text = `📊 *FECHAMENTO DA SEMANA* 📊\n`;
+    text += `📆 ${formatBR(weekStart)} a ${formatBR(weekEnd)}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━\n\n`;
+    
+    text += `🎯 *NÚMEROS DA EQUIPE*\n\n`;
+    text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
+    text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
+    text += `📞 Reuniões totais: *${totalReunioes}*\n`;
+    text += `🟢 Vendas: *${totals.vendas}*\n`;
+    if (totals.valor > 0) text += `💰 Faturamento: *${formatBRMoney(totals.valor * 1000)}*\n`;
+    if (ticketMedio > 0) text += `💎 Ticket médio: *${formatBRMoney(ticketMedio * 1000)}*\n`;
+    
+    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    text += `📈 *MÉDIA DIÁRIA (${daysWorked} dia${daysWorked !== 1 ? 's' : ''})*\n\n`;
+    text += `🔵 ${mediaDiag} diagnósticos/dia\n`;
+    text += `🟡 ${mediaPlano} planos/dia\n`;
+    text += `📞 ${mediaReunioes} reuniões/dia\n`;
+    
+    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🔄 *CONVERSÃO DO FUNIL*\n\n`;
+    text += `🔵→🟡 Diag → Plano: *${convDiagPlano}%*\n`;
+    text += `🟡→🟢 Plano → Venda: *${convPlanoVenda}%*\n`;
+    text += `🎯 Diag → Venda: *${convTotal}%*\n`;
+    
+    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    text += `💪 *Excelente semana, time!*\n`;
+    text += `Bora repetir e melhorar na próxima! 🚀`;
+    
+    return text;
+  }
+  
+  function generateMonthReport() {
+    const today = parseDate(state.currentDate);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const dates = getDatesInRange(monthStart, monthEnd);
+    const data = aggregateData(dates);
+    const totals = sumTotals(data);
+    const daysWorked = countDaysWithRecords(dates) || 1;
+    
+    const monthName = monthStart.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    const totalReunioes = totals.diagnosticos + totals.planoAcao;
+    const convDiagPlano = totals.diagnosticos > 0 ? Math.round((totals.planoAcao / totals.diagnosticos) * 100) : 0;
+    const convPlanoVenda = totals.planoAcao > 0 ? Math.round((totals.vendas / totals.planoAcao) * 100) : 0;
+    const convTotal = totals.diagnosticos > 0 ? Math.round((totals.vendas / totals.diagnosticos) * 100) : 0;
+    
+    const mediaDiag = (totals.diagnosticos / daysWorked).toFixed(1);
+    const mediaPlano = (totals.planoAcao / daysWorked).toFixed(1);
+    const mediaReunioes = (totalReunioes / daysWorked).toFixed(1);
+    const ticketMedio = totals.vendas > 0 ? (totals.valor / totals.vendas) : 0;
+    
+    let text = `🏆 *FECHAMENTO DO MÊS* 🏆\n`;
+    text += `📅 ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━\n\n`;
+    
+    text += `🎯 *RESULTADO CONSOLIDADO*\n\n`;
+    text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
+    text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
+    text += `📞 Reuniões totais: *${totalReunioes}*\n`;
+    text += `🟢 Vendas fechadas: *${totals.vendas}*\n`;
+    if (totals.valor > 0) text += `💰 *Faturamento: ${formatBRMoney(totals.valor * 1000)}*\n`;
+    if (ticketMedio > 0) text += `💎 Ticket médio: *${formatBRMoney(ticketMedio * 1000)}*\n`;
+    
+    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    text += `📈 *MÉDIAS DIÁRIAS (${daysWorked} dia${daysWorked !== 1 ? 's' : ''})*\n\n`;
+    text += `🔵 ${mediaDiag} diagnósticos/dia\n`;
+    text += `🟡 ${mediaPlano} planos/dia\n`;
+    text += `📞 ${mediaReunioes} reuniões/dia\n`;
+    
+    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🔄 *CONVERSÃO DO FUNIL*\n\n`;
+    text += `🔵→🟡 Diag → Plano: *${convDiagPlano}%*\n`;
+    text += `🟡→🟢 Plano → Venda: *${convPlanoVenda}%*\n`;
+    text += `🎯 Conversão geral: *${convTotal}%*\n`;
+    
+    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🚀 *MÊS FECHADO!*\n`;
+    text += `Obrigado, time! Bora pro próximo desafio! 💪`;
+    
+    return text;
+  }
+  
+  // MODAL DE PREVIEW
+  function openPreview(type) {
+    const overlay = document.getElementById('previewOverlay');
+    const card = document.getElementById('previewCard');
+    const title = document.getElementById('previewTitle');
+    const tag = document.getElementById('previewTag');
+    const content = document.getElementById('previewContent');
+    
+    let report = '';
+    let titleText = '';
+    let tagText = '';
+    let colorVar = '';
+    
+    if (type === 'day') {
+      report = generateDayReport();
+      titleText = 'Resumo do Dia';
+      tagText = '📅 LANÇAMENTO DIÁRIO';
+      colorVar = 'var(--diag)';
+    } else if (type === 'week') {
+      report = generateWeekReport();
+      titleText = 'Resumo da Semana';
+      tagText = '📊 FECHAMENTO SEMANAL';
+      colorVar = 'var(--plano)';
+    } else if (type === 'month') {
+      report = generateMonthReport();
+      titleText = 'Resumo do Mês';
+      tagText = '🏆 FECHAMENTO MENSAL';
+      colorVar = 'var(--venda)';
+    }
+    
+    title.textContent = titleText;
+    tag.textContent = tagText;
+    tag.style.color = colorVar;
+    content.textContent = report;
+    card.style.setProperty('--report-color', colorVar);
+    overlay.classList.add('show');
+    
+    // Salva o relatório atual para o botão de copy
+    overlay.dataset.report = report;
+  }
+  
+  function closePreview() {
+    document.getElementById('previewOverlay').classList.remove('show');
+  }
+  
+  function copyPreviewToClipboard() {
+    const overlay = document.getElementById('previewOverlay');
+    const report = overlay.dataset.report;
+    navigator.clipboard.writeText(report).then(() => {
+      showToast('✓ Copiado! Cola no WhatsApp');
+      closePreview();
+    });
+  }
+
+  // ACTIONS
+  function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  async function handleSave() {
+    document.getElementById('saveBtn').disabled = true;
+    await saveDay();
+    document.getElementById('saveBtn').disabled = false;
+  }
+
+  async function handleClear() {
+    const msg = state.currentUser === 'gestor' 
+      ? 'GESTOR: Limpar TODOS os lançamentos deste dia?'
+      : `Limpar seu lançamento deste dia?`;
+    if (!confirm(msg)) return;
+    const targets = state.currentUser === 'gestor' ? SELLERS.map(s => s.id) : [state.currentUser];
+    try {
+      for (const seller of targets) {
+        if (state.records[state.currentDate]) state.records[state.currentDate][seller] = getEmptyRecord();
+        await saveRecord(state.currentDate, seller, getEmptyRecord());
+      }
+      renderInputs();
+      renderAll();
+      showToast('Dia limpo');
+    } catch (e) { showToast('Erro ao limpar', true); }
+  }
+
+  function changeDate(newDate) {
+    state.currentDate = newDate;
+    document.getElementById('dateInput').value = newDate;
+    renderInputs();
+    renderAll();
+    setSaveStatus('saved');
+  }
+
+  function navigateDay(offset) {
+    const d = parseDate(state.currentDate);
+    d.setDate(d.getDate() + offset);
+    changeDate(formatDate(d));
+  }
+
+  function selectUser(userId) {
+    state.currentUser = userId;
+    localStorage.setItem('dashboard_user', userId);
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('mainContainer').style.display = 'block';
+    const isGestor = userId === 'gestor';
+    const seller = SELLERS.find(s => s.id === userId);
+    const displayName = isGestor ? 'Gestor' : seller.name;
+    const avatarLetter = isGestor ? 'G' : seller.name.charAt(0);
+    const userColor = isGestor ? '#06b6d4' : seller.color;
+    document.getElementById('currentUserName').textContent = displayName;
+    document.getElementById('currentUserAvatar').textContent = avatarLetter;
+    document.getElementById('currentUser').style.setProperty('--user-color', userColor);
+    initApp();
+  }
+
+  function logout() {
+    localStorage.removeItem('dashboard_user');
+    location.reload();
+  }
+
+  async function initApp() {
+    await fetchAllRecords();
+    setupRealtime();
+    renderInputs();
+    renderAll();
+  }
+
+  function init() {
+    console.log('🟢 [VENDE-C] Iniciando dashboard...');
+    
+    try {
+      // Conectar botões de LOGIN
+      const loginBtns = document.querySelectorAll('.login-seller-btn, .login-guest-btn');
+      console.log('🟢 [VENDE-C] Botões de login encontrados:', loginBtns.length);
+      
+      loginBtns.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const userId = this.dataset.user;
+          console.log('🟢 [VENDE-C] Click em:', userId);
+          if (userId) {
+            selectUser(userId);
+          } else {
+            console.error('❌ [VENDE-C] Botão sem data-user!');
+          }
+        });
+      });
+      
+      // Verificar localStorage - se tiver valor inválido, limpa
+      const validUsers = ['gab', 'mau', 'gi', 'gui', 'gestor'];
+      const savedUser = localStorage.getItem('dashboard_user');
+      console.log('🟢 [VENDE-C] Usuário salvo:', savedUser);
+      
+      if (savedUser && validUsers.includes(savedUser)) {
+        console.log('🟢 [VENDE-C] Auto-login:', savedUser);
+        selectUser(savedUser);
+      } else if (savedUser) {
+        console.warn('⚠️ [VENDE-C] localStorage corrompido, limpando...');
+        localStorage.removeItem('dashboard_user');
+      }
+
+      // Conectar controles principais (com try/catch individual)
+      const dateInput = document.getElementById('dateInput');
+      if (dateInput) {
+        dateInput.value = state.currentDate;
+        dateInput.addEventListener('change', e => changeDate(e.target.value));
+      }
+      
+      const prevDay = document.getElementById('prevDay');
+      if (prevDay) prevDay.addEventListener('click', () => navigateDay(-1));
+      
+      const nextDay = document.getElementById('nextDay');
+      if (nextDay) nextDay.addEventListener('click', () => navigateDay(1));
+      
+      const todayBtn = document.getElementById('todayBtn');
+      if (todayBtn) todayBtn.addEventListener('click', () => changeDate(formatDate(new Date())));
+      
+      const saveBtn = document.getElementById('saveBtn');
+      if (saveBtn) saveBtn.addEventListener('click', handleSave);
+      
+      const clearBtn = document.getElementById('clearBtn');
+      if (clearBtn) clearBtn.addEventListener('click', handleClear);
+      
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) logoutBtn.addEventListener('click', logout);
+
+      // Botões de relatório
+      const reportDayBtn = document.getElementById('reportDayBtn');
+      if (reportDayBtn) reportDayBtn.addEventListener('click', () => openPreview('day'));
+      
+      const reportWeekBtn = document.getElementById('reportWeekBtn');
+      if (reportWeekBtn) reportWeekBtn.addEventListener('click', () => openPreview('week'));
+      
+      const reportMonthBtn = document.getElementById('reportMonthBtn');
+      if (reportMonthBtn) reportMonthBtn.addEventListener('click', () => openPreview('month'));
+      
+      const previewClose = document.getElementById('previewClose');
+      if (previewClose) previewClose.addEventListener('click', closePreview);
+      
+      const previewCancel = document.getElementById('previewCancel');
+      if (previewCancel) previewCancel.addEventListener('click', closePreview);
+      
+      const previewCopy = document.getElementById('previewCopy');
+      if (previewCopy) previewCopy.addEventListener('click', copyPreviewToClipboard);
+      
+      const previewOverlay = document.getElementById('previewOverlay');
+      if (previewOverlay) {
+        previewOverlay.addEventListener('click', (e) => {
+          if (e.target.id === 'previewOverlay') closePreview();
+        });
+      }
+
+      document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); handleSave(); }
+        if (e.key === 'Escape') closePreview();
+      });
+      
+      console.log('🟢 [VENDE-C] Dashboard iniciado com sucesso! Versão: 2026-05-30-v4');
+    } catch (err) {
+      console.error('❌ [VENDE-C] Erro fatal na inicialização:', err);
+      alert('Erro ao iniciar dashboard. Abre o console (F12) e me manda o erro.');
+    }
+  }
+
+  // Aguardar DOM estar 100% pronto antes de iniciar
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>
+</body>
+</html>
