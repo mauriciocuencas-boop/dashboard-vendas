@@ -1135,7 +1135,7 @@
 <body>
 
 <!-- LOGIN -->
-<div class="login-overlay" id="loginOverlay">
+<div class="login-overlay" id="loginOverlay" style="display: none;">
   <div class="login-card">
     <div class="login-brand">VENDE-C · Cadência Comercial</div>
     <h1 class="login-title">Bem-<em>vindo</em></h1>
@@ -1191,7 +1191,7 @@
   </div>
 </div>
 
-<div class="container" id="mainContainer" style="display: none;">
+<div class="container" id="mainContainer">
 
   <div class="header">
     <div class="header-left">
@@ -1206,7 +1206,7 @@
       </div>
     </div>
     <div class="header-right">
-      <div class="current-user" id="currentUser">
+      <div class="current-user" id="currentUser" style="display: none;">
         <div class="current-user-avatar" id="currentUserAvatar">—</div>
         <div>
           <div class="current-user-name" id="currentUserName">—</div>
@@ -1337,7 +1337,8 @@
   const FIELDS = ['diagnosticos', 'planoAcao', 'vendas', 'valor'];
 
   let state = {
-    currentUser: null,
+    currentUser: 'gestor',
+    sessionId: 'sess_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36),
     currentDate: formatDate(new Date()),
     records: {}
   };
@@ -1468,7 +1469,7 @@
         plano_acao: dataObj.planoAcao || 0,
         vendas: dataObj.vendas || 0,
         valor: dataObj.valor || 0,
-        atualizado_por: state.currentUser,
+        atualizado_por: state.sessionId,
         atualizado_em: new Date().toISOString()
       };
       const { error } = await db.from('lancamentos').upsert(payload, { onConflict: 'data,vendedor' });
@@ -1503,7 +1504,7 @@
   function handleRealtimeUpdate(payload) {
     const row = payload.new || payload.old;
     if (!row) return;
-    if (row.atualizado_por === state.currentUser) return;
+    if (row.atualizado_por === state.sessionId) return;
     if (payload.eventType === 'DELETE') {
       if (state.records[row.data]) delete state.records[row.data][row.vendedor];
     } else {
@@ -2122,35 +2123,9 @@
     console.log('🟢 [VENDE-C] Iniciando dashboard...');
     
     try {
-      // Conectar botões de LOGIN
-      const loginBtns = document.querySelectorAll('.login-seller-btn, .login-guest-btn');
-      console.log('🟢 [VENDE-C] Botões de login encontrados:', loginBtns.length);
-      
-      loginBtns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          const userId = this.dataset.user;
-          console.log('🟢 [VENDE-C] Click em:', userId);
-          if (userId) {
-            selectUser(userId);
-          } else {
-            console.error('❌ [VENDE-C] Botão sem data-user!');
-          }
-        });
-      });
-      
-      // Verificar localStorage - se tiver valor inválido, limpa
-      const validUsers = ['gab', 'mau', 'gi', 'gui', 'gestor'];
-      const savedUser = localStorage.getItem('dashboard_user');
-      console.log('🟢 [VENDE-C] Usuário salvo:', savedUser);
-      
-      if (savedUser && validUsers.includes(savedUser)) {
-        console.log('🟢 [VENDE-C] Auto-login:', savedUser);
-        selectUser(savedUser);
-      } else if (savedUser) {
-        console.warn('⚠️ [VENDE-C] localStorage corrompido, limpando...');
-        localStorage.removeItem('dashboard_user');
-      }
+      // Acesso único: sem tela de login. Todos com o link entram direto.
+      console.log('🟢 [VENDE-C] Sessão:', state.sessionId);
+      selectUser('gestor');
 
       // Conectar controles principais (com try/catch individual)
       const dateInput = document.getElementById('dateInput');
@@ -2208,7 +2183,7 @@
         if (e.key === 'Escape') closePreview();
       });
       
-      console.log('🟢 [VENDE-C] Dashboard iniciado com sucesso! Versão: 2026-05-30-v4');
+      console.log('🟢 [VENDE-C] Dashboard iniciado com sucesso! Versão: 2026-05-30-v5');
     } catch (err) {
       console.error('❌ [VENDE-C] Erro fatal na inicialização:', err);
       alert('Erro ao iniciar dashboard. Abre o console (F12) e me manda o erro.');
