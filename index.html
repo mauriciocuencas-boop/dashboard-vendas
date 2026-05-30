@@ -1,1 +1,2306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VENDE-C · Dashboard Comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter+Tight:wght@200..900&family=JetBrains+Mono:wght@300..800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    /* CORES BASE */
+    --bg-0: #08080a;
+    --bg-1: #0d0d11;
+    --bg-2: #131318;
+    --bg-3: #1a1a21;
+    --bg-4: #22222b;
+    --bg-glass: rgba(20, 20, 26, 0.6);
+    --border-1: #1f1f27;
+    --border-2: #2a2a35;
+    --border-3: #3a3a48;
+    
+    /* TEXTOS */
+    --text-1: #fafafa;
+    --text-2: #a1a1aa;
+    --text-3: #71717a;
+    --text-4: #52525b;
+    
+    /* ACENTOS */
+    --pink: #ff2d6f;
+    --pink-soft: #ff2d6f33;
+    --pink-deep: #c91860;
+    --emerald: #10b981;
+    --emerald-soft: #10b98122;
+    --amber: #f59e0b;
+    --amber-soft: #f59e0b22;
+    --red: #ef4444;
+    --red-soft: #ef444422;
+    --violet: #8b5cf6;
+    --violet-soft: #8b5cf622;
+    
+    /* CORES POR VENDEDOR */
+    --gab-color: #ef4444;
+    --mau-color: #f59e0b;
+    --gi-color: #10b981;
+    --gui-color: #8b5cf6;
+    
+    /* FONTES */
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Inter Tight', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    
+    /* SOMBRAS */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+    --shadow-lg: 0 12px 40px rgba(0,0,0,0.6);
+    --shadow-glow-pink: 0 0 40px rgba(255, 45, 111, 0.25);
+    --shadow-glow-emerald: 0 0 40px rgba(16, 185, 129, 0.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  *::selection {
+    background: var(--pink);
+    color: white;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-0);
+    color: var(--text-1);
+    min-height: 100vh;
+    padding: 32px;
+    font-feature-settings: 'ss01', 'ss02', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* BACKGROUND ATMOSPHERICO */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 20% 0%, rgba(255, 45, 111, 0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  /* GRAIN TEXTURE */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    z-index: -1;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  .container { 
+    max-width: 1440px; 
+    margin: 0 auto; 
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ============================================
+     LOGIN MODAL — CINEMATOGRÁFICO
+     ============================================ */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 8, 10, 0.85);
+    backdrop-filter: blur(40px) saturate(1.2);
+    -webkit-backdrop-filter: blur(40px) saturate(1.2);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .login-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-2);
+    border-radius: 24px;
+    padding: 56px 48px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow-lg), 0 0 80px rgba(255, 45, 111, 0.15);
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--pink), var(--violet), var(--emerald), transparent);
+    animation: shimmer 4s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .login-brand {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .login-brand::before, .login-brand::after {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--border-3);
+  }
+
+  .login-title {
+    font-family: var(--font-display);
+    font-size: 56px;
+    font-weight: 300;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    margin-bottom: 12px;
+  }
+
+  .login-title em {
+    font-style: italic;
+    font-weight: 400;
+    background: linear-gradient(135deg, var(--pink), #ff5a8a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .login-subtitle {
+    color: var(--text-3);
+    font-size: 14px;
+    margin-bottom: 40px;
+    letter-spacing: 0.01em;
+  }
+
+  .login-sellers {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .login-seller-btn {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    color: var(--text-1);
+    padding: 22px 16px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .login-seller-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--seller-color);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.3s ease;
+  }
+
+  .login-seller-btn::after {
+    content: '→';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%) translateX(-10px);
+    color: var(--text-3);
+    opacity: 0;
+    transition: all 0.3s ease;
+    font-family: var(--font-mono);
+  }
+
+  .login-seller-btn:hover {
+    background: var(--bg-3);
+    border-color: var(--seller-color);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  .login-seller-btn:hover::before { transform: scaleY(1); }
+  .login-seller-btn:hover::after { opacity: 1; transform: translateY(-50%) translateX(0); color: var(--seller-color); }
+
+  .login-seller-name {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .login-seller-role {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  .login-divider {
+    color: var(--text-4);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .login-divider::before, .login-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-1);
+  }
+
+  .login-guest-btn {
+    background: transparent;
+    border: 1px dashed var(--border-2);
+    color: var(--text-2);
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    letter-spacing: 0.01em;
+  }
+
+  .login-guest-btn:hover {
+    border-color: var(--pink);
+    border-style: solid;
+    color: var(--text-1);
+    background: var(--pink-soft);
+  }
+
+  /* ============================================
+     HEADER
+     ============================================ */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border-1);
+    flex-wrap: wrap;
+    gap: 24px;
+    opacity: 0;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .header-left { display: flex; flex-direction: column; gap: 4px; }
+
+  .header-brand {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-brand-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--pink);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--pink);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 56px;
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+
+  .header-title em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--pink);
+  }
+
+  .header-subtitle {
+    font-size: 13px;
+    color: var(--text-3);
+    margin-top: 12px;
+    letter-spacing: 0.01em;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .header-subtitle-divider {
+    width: 4px;
+    height: 4px;
+    background: var(--text-4);
+    border-radius: 50%;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  /* CURRENT USER PILL */
+  .current-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    padding: 10px 16px;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+
+  .current-user:hover { border-color: var(--border-3); }
+
+  .current-user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--user-color, var(--pink));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    box-shadow: 0 0 12px var(--user-color, var(--pink));
+  }
+
+  .current-user-name {
+    font-weight: 500;
+    color: var(--text-1);
+  }
+
+  .current-user-status {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .logout-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-4);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 4px 0 4px 12px;
+    border-left: 1px solid var(--border-2);
+    margin-left: 4px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: color 0.2s;
+  }
+
+  .logout-btn:hover { color: var(--red); }
+
+  /* PERIOD SELECTOR */
+  .period-selector {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-2);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--border-1);
+  }
+
+  .period-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-3);
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+    position: relative;
+  }
+
+  .period-btn:hover { color: var(--text-1); }
+
+  .period-btn.active {
+    background: var(--pink);
+    color: white;
+    box-shadow: 0 4px 16px rgba(255, 45, 111, 0.4);
+  }
+
+  /* ============================================
+     CONNECTION INDICATOR
+     ============================================ */
+  .connection-status {
+    position: fixed;
+    top: 28px;
+    right: 28px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-2);
+    border-radius: 100px;
+    padding: 8px 14px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .connection-status.visible { opacity: 1; transform: translateY(0); }
+
+  .connection-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-4);
+  }
+
+  .connection-status.connected .connection-dot {
+    background: var(--emerald);
+    box-shadow: 0 0 12px var(--emerald);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  .connection-status.error .connection-dot { background: var(--red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.9); }
+  }
+
+  /* ============================================
+     TOTAIS GERAIS
+     ============================================ */
+  .section-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--text-4);
+  }
+
+  .section-meta-info {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-4);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  .totals-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    margin-bottom: 64px;
+    background: var(--border-1);
+    border: 1px solid var(--border-1);
+    border-radius: 20px;
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  }
+
+  .total-card {
+    background: var(--bg-1);
+    padding: 32px 28px;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+  }
+
+  .total-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-color, var(--pink));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .total-card:hover {
+    background: var(--bg-2);
+  }
+
+  .total-card:hover::before { transform: scaleX(1); }
+
+  .total-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .total-value {
+    font-family: var(--font-display);
+    font-size: 52px;
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--text-1);
+    transition: color 0.3s;
+  }
+
+  .total-value.accent {
+    background: linear-gradient(135deg, var(--pink) 0%, #ff5a8a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .total-meta {
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .total-meta-badge {
+    background: var(--emerald-soft);
+    color: var(--emerald);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ============================================
+     VENDEDORES
+     ============================================ */
+  .sellers-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 64px;
+  }
+
+  .seller-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 18px;
+    padding: 24px;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    opacity: 0;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .seller-card:nth-child(1) { animation-delay: 0.4s; }
+  .seller-card:nth-child(2) { animation-delay: 0.5s; }
+  .seller-card:nth-child(3) { animation-delay: 0.6s; }
+  .seller-card:nth-child(4) { animation-delay: 0.7s; }
+
+  .seller-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, var(--seller-color) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+
+  .seller-card:hover {
+    border-color: var(--seller-color);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  }
+
+  .seller-card:hover::before { opacity: 0.05; }
+
+  .seller-card.is-me {
+    border-color: var(--pink);
+    background: linear-gradient(135deg, var(--bg-1) 0%, rgba(255, 45, 111, 0.04) 100%);
+    box-shadow: 0 0 0 1px var(--pink), var(--shadow-glow-pink);
+  }
+
+  .seller-card.is-me::after {
+    content: 'VOCÊ';
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--pink);
+    letter-spacing: 0.2em;
+    padding: 3px 8px;
+    background: var(--pink-soft);
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  .seller-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+
+  .seller-name-wrap { display: flex; flex-direction: column; gap: 4px; }
+
+  .seller-name {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .seller-position {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-4);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .seller-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .seller-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--seller-color);
+    box-shadow: 0 0 16px var(--seller-color);
+  }
+
+  .seller-revenue-block {
+    margin-bottom: 24px;
+  }
+
+  .seller-revenue {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, var(--pink) 0%, #ff5a8a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .seller-revenue-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  /* SPARKLINE */
+  .seller-sparkline {
+    height: 32px;
+    margin-bottom: 20px;
+    opacity: 0.7;
+  }
+
+  .seller-sparkline svg { width: 100%; height: 100%; }
+
+  .sparkline-path {
+    fill: none;
+    stroke: var(--seller-color);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sparkline-area {
+    fill: var(--seller-color);
+    opacity: 0.1;
+  }
+
+  .seller-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-1);
+  }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .metric-label {
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 500;
+  }
+
+  .metric-value {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--text-1);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-value.highlight {
+    color: var(--pink);
+  }
+
+  /* ============================================
+     LANÇAMENTO DO DIA
+     ============================================ */
+  .launch-section {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+  }
+
+  .launch-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .date-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .date-input {
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    border-radius: 10px;
+    padding: 11px 16px;
+    color: var(--text-1);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .date-input:hover { border-color: var(--border-3); }
+  .date-input:focus { outline: none; border-color: var(--pink); }
+  .date-input::-webkit-calendar-picker-indicator { 
+    filter: invert(0.7); 
+    cursor: pointer;
+    opacity: 0.7;
+  }
+
+  .nav-btn {
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    color: var(--text-1);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .nav-btn:hover {
+    border-color: var(--pink);
+    color: var(--pink);
+    background: var(--pink-soft);
+  }
+
+  .today-btn {
+    background: var(--bg-3);
+    border: 1px solid var(--border-2);
+    color: var(--text-1);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .today-btn:hover { 
+    border-color: var(--pink); 
+    color: var(--pink);
+    background: var(--pink-soft);
+  }
+
+  .save-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--emerald-soft);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--emerald);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.3s;
+  }
+
+  .save-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--emerald);
+    box-shadow: 0 0 8px var(--emerald);
+  }
+
+  .save-status.unsaved {
+    background: var(--amber-soft);
+    border-color: rgba(245, 158, 11, 0.25);
+    color: var(--amber);
+  }
+
+  .save-status.unsaved .save-status-dot {
+    background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+  }
+
+  .save-status.saving {
+    background: var(--pink-soft);
+    border-color: rgba(255, 45, 111, 0.25);
+    color: var(--pink);
+  }
+
+  .save-status.saving .save-status-dot {
+    background: var(--pink);
+    box-shadow: 0 0 8px var(--pink);
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  .day-total {
+    margin-left: auto;
+    text-align: right;
+    padding-left: 20px;
+    border-left: 1px solid var(--border-1);
+  }
+
+  .day-total-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 4px;
+  }
+
+  .day-total-value {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--pink) 0%, #ff5a8a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* INPUTS GRID */
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .seller-inputs {
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    border-radius: 14px;
+    padding: 22px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .seller-inputs::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--seller-color);
+    opacity: 0.3;
+    transition: opacity 0.3s;
+  }
+
+  .seller-inputs:hover { 
+    border-color: var(--border-2);
+    background: var(--bg-3);
+  }
+
+  .seller-inputs:hover::before { opacity: 1; }
+
+  .seller-inputs.locked {
+    opacity: 0.45;
+  }
+
+  .seller-inputs.locked::before { opacity: 0.15; }
+
+  .seller-inputs-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .seller-tag {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    background: var(--seller-color);
+    color: white;
+    box-shadow: 0 2px 8px var(--seller-color-shadow);
+  }
+
+  .seller-inputs-status {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-4);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  .seller-inputs-status.locked {
+    color: var(--amber);
+  }
+
+  .inputs-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .input-field { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 6px; 
+  }
+
+  .input-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 600;
+  }
+
+  .input-field input {
+    background: var(--bg-0);
+    border: 1px solid var(--border-1);
+    border-radius: 8px;
+    padding: 11px 12px;
+    color: var(--text-1);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.2s;
+    width: 100%;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .input-field input:focus {
+    outline: none;
+    border-color: var(--pink);
+    box-shadow: 0 0 0 3px var(--pink-soft);
+    background: var(--bg-1);
+  }
+
+  .input-field input:hover:not(:disabled) { border-color: var(--border-3); }
+
+  .input-field input:disabled { 
+    cursor: not-allowed; 
+    opacity: 0.5;
+    background: transparent;
+  }
+
+  /* ACTIONS */
+  .actions {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-1);
+  }
+
+  .btn {
+    padding: 15px 24px;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.02em;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+
+  .btn:hover:not(:disabled)::before { transform: translateX(100%); }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--pink) 0%, var(--pink-deep) 100%);
+    color: white;
+    box-shadow: 0 4px 20px rgba(255, 45, 111, 0.35);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 45, 111, 0.5);
+  }
+
+  .btn-secondary {
+    background: var(--bg-3);
+    color: var(--text-1);
+    border-color: var(--border-2);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: var(--border-3);
+    background: var(--bg-4);
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--text-3);
+    border-color: var(--border-2);
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    border-color: var(--red);
+    background: var(--red-soft);
+    color: var(--red);
+  }
+
+  /* ============================================
+     INSIGHTS
+     ============================================ */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 48px;
+  }
+
+  .insight-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 18px;
+    padding: 28px;
+    transition: all 0.3s;
+  }
+
+  .insight-card:hover { border-color: var(--border-2); }
+
+  .insight-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .insight-subtitle {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    margin-bottom: 28px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  /* RANKING */
+  .ranking-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+  }
+
+  .ranking-item {
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 18px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-1);
+    border-radius: 12px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ranking-item:hover {
+    border-color: var(--border-2);
+    background: var(--bg-3);
+    transform: translateX(4px);
+  }
+
+  .ranking-item.gold {
+    border-color: rgba(245, 158, 11, 0.3);
+    background: linear-gradient(135deg, var(--bg-2) 0%, rgba(245, 158, 11, 0.04) 100%);
+  }
+
+  .ranking-position {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--text-4);
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .ranking-item.gold .ranking-position {
+    color: var(--amber);
+  }
+
+  .ranking-info { display: flex; flex-direction: column; gap: 4px; }
+
+  .ranking-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ranking-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--seller-color);
+  }
+
+  .ranking-meta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .ranking-value {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--pink);
+    line-height: 1;
+  }
+
+  /* WEEKLY COMPARISON */
+  .weekly-comparison { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 14px; 
+  }
+
+  .week-bar {
+    display: grid;
+    grid-template-columns: 90px 1fr 110px;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .week-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-2);
+  }
+
+  .week-label-period {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-4);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .week-bar-track {
+    height: 32px;
+    background: var(--bg-2);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-1);
+  }
+
+  .week-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pink) 0%, #ff5a8a 100%);
+    border-radius: 7px;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 0 16px rgba(255, 45, 111, 0.3);
+  }
+
+  .week-value {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 400;
+    text-align: right;
+    color: var(--text-1);
+    letter-spacing: -0.02em;
+  }
+
+  /* ============================================
+     TOAST
+     ============================================ */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--bg-2);
+    border: 1px solid var(--emerald);
+    border-radius: 12px;
+    padding: 16px 24px;
+    color: var(--text-1);
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-2);
+    transform: translateY(120%);
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 1000;
+    backdrop-filter: blur(20px);
+  }
+
+  .toast::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: var(--emerald);
+    border-radius: 2px;
+    box-shadow: 0 0 12px var(--emerald);
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-color: var(--red); }
+  .toast.error::before { background: var(--red); box-shadow: 0 0 12px var(--red); }
+
+  /* LIVE UPDATE BADGE */
+  .live-update {
+    position: fixed;
+    top: 80px;
+    right: 28px;
+    background: var(--bg-2);
+    color: var(--text-1);
+    padding: 12px 18px;
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    transform: translateX(200%);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px var(--border-2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .live-update.show { transform: translateX(0); }
+
+  .live-update-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--emerald);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--emerald);
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1100px) {
+    .totals-grid, .sellers-grid { grid-template-columns: repeat(2, 1fr); }
+    .inputs-grid, .insights-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    body { padding: 20px; }
+    .totals-grid, .sellers-grid { grid-template-columns: 1fr; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .header-right { align-items: flex-start; width: 100%; }
+    .header-title { font-size: 40px; }
+    .inputs-row { grid-template-columns: repeat(2, 1fr); }
+    .actions { grid-template-columns: 1fr; }
+    .login-sellers { grid-template-columns: 1fr; }
+    .login-title { font-size: 40px; }
+    .login-card { padding: 36px 28px; }
+    .connection-status { top: 16px; right: 16px; }
+    .day-total { 
+      margin-left: 0; 
+      padding-left: 0; 
+      border-left: none;
+      border-top: 1px solid var(--border-1);
+      padding-top: 16px;
+      width: 100%;
+      text-align: left;
+    }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg-0); }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 5px; border: 2px solid var(--bg-0); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-3); }
+
+  /* LOADING STATE */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg-2) 0%, var(--bg-3) 50%, var(--bg-2) 100%);
+    background-size: 200% 100%;
+    animation: skeleton 1.5s ease-in-out infinite;
+    border-radius: 8px;
+  }
+
+  @keyframes skeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-brand">VENDE-C · Sistema Comercial</div>
+    <h1 class="login-title">Bem-<em>vindo</em></h1>
+    <p class="login-subtitle">Selecione seu acesso para continuar</p>
+    <div class="login-sellers">
+      <button class="login-seller-btn" data-user="gab" style="--seller-color: var(--gab-color)">
+        <span class="login-seller-name">Gab</span>
+        <span class="login-seller-role">Vendedor 01</span>
+      </button>
+      <button class="login-seller-btn" data-user="mau" style="--seller-color: var(--mau-color)">
+        <span class="login-seller-name">Mau</span>
+        <span class="login-seller-role">Vendedor 02</span>
+      </button>
+      <button class="login-seller-btn" data-user="gi" style="--seller-color: var(--gi-color)">
+        <span class="login-seller-name">Gi</span>
+        <span class="login-seller-role">Vendedor 03</span>
+      </button>
+      <button class="login-seller-btn" data-user="gui" style="--seller-color: var(--gui-color)">
+        <span class="login-seller-name">Gui</span>
+        <span class="login-seller-role">Vendedor 04</span>
+      </button>
+    </div>
+    <div class="login-divider">ou</div>
+    <button class="login-guest-btn" data-user="gestor">→  Acessar como Gestor</button>
+  </div>
+</div>
+
+<!-- CONNECTION STATUS -->
+<div class="connection-status" id="connectionStatus">
+  <span class="connection-dot"></span>
+  <span id="connectionText">Conectando</span>
+</div>
+
+<!-- LIVE UPDATE -->
+<div class="live-update" id="liveUpdate">
+  <span class="live-update-dot"></span>
+  <span id="liveUpdateText">Atualização ao vivo</span>
+</div>
+
+<div class="container" id="mainContainer" style="display: none;">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-brand"><span class="header-brand-dot"></span>VENDE-C · Dashboard Comercial</div>
+      <h1 class="header-title">Reuniões <em>Semanais</em></h1>
+      <div class="header-subtitle">
+        <span>Diagnóstico</span>
+        <span class="header-subtitle-divider"></span>
+        <span>Plano de Ação</span>
+        <span class="header-subtitle-divider"></span>
+        <span>Vendas</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="current-user" id="currentUser">
+        <div class="current-user-avatar" id="currentUserAvatar">—</div>
+        <div>
+          <div class="current-user-name" id="currentUserName">—</div>
+          <div class="current-user-status">Online</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Sair</button>
+      </div>
+      <div class="period-selector">
+        <button class="period-btn active" data-period="day">Dia</button>
+        <button class="period-btn" data-period="week">Semana</button>
+        <button class="period-btn" data-period="month">Mês</button>
+        <button class="period-btn" data-period="all">Total</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOTAIS -->
+  <div class="section-meta">
+    <div class="section-label">Visão Geral</div>
+    <div class="section-meta-info" id="performancePeriod">—</div>
+  </div>
+  <div class="totals-grid" id="totalsGrid"></div>
+
+  <!-- VENDEDORES -->
+  <div class="section-meta">
+    <div class="section-label">Desempenho Individual</div>
+    <div class="section-meta-info">4 vendedores ativos</div>
+  </div>
+  <div class="sellers-grid" id="sellersGrid"></div>
+
+  <!-- LANÇAMENTO DO DIA -->
+  <div class="section-meta">
+    <div class="section-label">Lançamento do Dia</div>
+    <div class="section-meta-info">registro diário</div>
+  </div>
+  <div class="launch-section">
+    <div class="launch-header">
+      <div class="date-controls">
+        <input type="date" id="dateInput" class="date-input">
+        <button class="nav-btn" id="prevDay">‹</button>
+        <button class="nav-btn" id="nextDay">›</button>
+        <button class="today-btn" id="todayBtn">Hoje</button>
+        <span class="save-status" id="saveStatus">
+          <span class="save-status-dot"></span>
+          <span>Sincronizado</span>
+        </span>
+      </div>
+      <div class="day-total">
+        <div class="day-total-label">Total do dia</div>
+        <div class="day-total-value" id="dayTotal">R$ 0</div>
+      </div>
+    </div>
+
+    <div class="inputs-grid" id="inputsGrid"></div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="saveBtn">
+        <span>↗</span> Salvar Lançamento
+      </button>
+      <button class="btn btn-secondary" id="copyBtn">
+        <span>⎘</span> Copiar Resumo
+      </button>
+      <button class="btn btn-danger" id="clearBtn">
+        <span>×</span> Limpar Dia
+      </button>
+    </div>
+  </div>
+
+  <!-- INSIGHTS -->
+  <div class="insights-grid">
+    <div class="insight-card">
+      <h3 class="insight-title">Ranking da Semana</h3>
+      <p class="insight-subtitle">Ordenado por receita</p>
+      <div class="ranking-list" id="rankingList"></div>
+    </div>
+    <div class="insight-card">
+      <h3 class="insight-title">Evolução Mensal</h3>
+      <p class="insight-subtitle">Últimas 4 semanas</p>
+      <div class="weekly-comparison" id="weeklyComparison"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================
+  // SUPABASE
+  // ============================================
+  const SUPABASE_URL = 'https://lwcmqdretuxpywswcsri.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3Y21xZHJldHV4cHl3c3djc3JpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE0MTQsImV4cCI6MjA5NTY2NzQxNH0.fXvfGdhMEwyB-8wjGyisjt6QA4FKHqevEi73eBrve4A';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ============================================
+  // CONFIG
+  // ============================================
+  const SELLERS = [
+    { id: 'gab', name: 'Gab', color: '#ef4444', shadow: 'rgba(239,68,68,0.4)' },
+    { id: 'mau', name: 'Mau', color: '#f59e0b', shadow: 'rgba(245,158,11,0.4)' },
+    { id: 'gi',  name: 'Gi',  color: '#10b981', shadow: 'rgba(16,185,129,0.4)' },
+    { id: 'gui', name: 'Gui', color: '#8b5cf6', shadow: 'rgba(139,92,246,0.4)' }
+  ];
+
+  const FIELDS = ['diagnosticos', 'planoAcao', 'vendas', 'valor'];
+
+  let state = {
+    currentUser: null,
+    currentDate: formatDate(new Date()),
+    currentPeriod: 'day',
+    records: {}
+  };
+
+  let saveDebounce = null;
+  let realtimeChannel = null;
+
+  // ============================================
+  // UTILS
+  // ============================================
+  function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function parseDate(str) {
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function formatBR(date) { return date.toLocaleDateString('pt-BR'); }
+
+  function formatCurrency(value) {
+    if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `R$ ${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+    return `R$ ${value.toFixed(0)}`;
+  }
+
+  function getEmptyRecord() { return { diagnosticos: 0, planoAcao: 0, vendas: 0, valor: 0 }; }
+
+  function getDayData(dateStr) {
+    if (!state.records[dateStr]) state.records[dateStr] = {};
+    SELLERS.forEach(s => {
+      if (!state.records[dateStr][s.id]) state.records[dateStr][s.id] = getEmptyRecord();
+    });
+    return state.records[dateStr];
+  }
+
+  function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  }
+
+  function getDatesInRange(start, end) {
+    const dates = [];
+    const cur = new Date(start);
+    while (cur <= end) { dates.push(formatDate(cur)); cur.setDate(cur.getDate() + 1); }
+    return dates;
+  }
+
+  function aggregateData(dates) {
+    const totals = {};
+    SELLERS.forEach(s => totals[s.id] = getEmptyRecord());
+    dates.forEach(date => {
+      if (state.records[date]) {
+        SELLERS.forEach(s => {
+          if (state.records[date][s.id]) {
+            FIELDS.forEach(f => { totals[s.id][f] += Number(state.records[date][s.id][f]) || 0; });
+          }
+        });
+      }
+    });
+    return totals;
+  }
+
+  function getPeriodDates(period) {
+    const today = parseDate(state.currentDate);
+    if (period === 'day') return [state.currentDate];
+    if (period === 'week') {
+      const start = getWeekStart(today);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      return getDatesInRange(start, end);
+    }
+    if (period === 'month') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      return getDatesInRange(start, end);
+    }
+    if (period === 'all') return Object.keys(state.records);
+    return [];
+  }
+
+  function getPeriodLabel(period) {
+    const today = parseDate(state.currentDate);
+    if (period === 'day') return formatBR(today);
+    if (period === 'week') {
+      const start = getWeekStart(today);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      return `${formatBR(start)} – ${formatBR(end)}`;
+    }
+    if (period === 'month') return today.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    if (period === 'all') return 'Acumulado total';
+    return '';
+  }
+
+  function canEdit(sellerId) {
+    if (state.currentUser === 'gestor') return true;
+    return state.currentUser === sellerId;
+  }
+
+  // Gera dados para sparkline (últimos 7 dias)
+  function getSparklineData(sellerId) {
+    const today = parseDate(state.currentDate);
+    const values = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = formatDate(d);
+      const v = state.records[dateStr]?.[sellerId]?.valor || 0;
+      values.push(v);
+    }
+    return values;
+  }
+
+  function buildSparkline(values, color) {
+    if (values.every(v => v === 0)) {
+      return `<svg viewBox="0 0 100 32" preserveAspectRatio="none"><line x1="0" y1="16" x2="100" y2="16" stroke="${color}" stroke-width="1" stroke-dasharray="2,3" opacity="0.3"/></svg>`;
+    }
+    const max = Math.max(...values, 1);
+    const points = values.map((v, i) => {
+      const x = (i / (values.length - 1)) * 100;
+      const y = 30 - (v / max) * 26;
+      return `${x},${y}`;
+    });
+    const path = `M${points.join(' L')}`;
+    const area = `M${points[0]} L${points.join(' L')} L100,32 L0,32 Z`;
+    return `<svg viewBox="0 0 100 32" preserveAspectRatio="none">
+      <path d="${area}" class="sparkline-area" style="fill: ${color}; opacity: 0.1"/>
+      <path d="${path}" class="sparkline-path" style="stroke: ${color}"/>
+    </svg>`;
+  }
+
+  // ============================================
+  // SUPABASE
+  // ============================================
+  async function fetchAllRecords() {
+    try {
+      setConnectionStatus('loading', 'Carregando');
+      const { data, error } = await db.from('lancamentos').select('*');
+      if (error) throw error;
+
+      state.records = {};
+      data.forEach(row => {
+        if (!state.records[row.data]) state.records[row.data] = {};
+        state.records[row.data][row.vendedor] = {
+          diagnosticos: row.diagnosticos || 0,
+          planoAcao: row.plano_acao || 0,
+          vendas: row.vendas || 0,
+          valor: parseFloat(row.valor) || 0
+        };
+      });
+      setConnectionStatus('connected', 'Tempo real');
+      return true;
+    } catch (e) {
+      console.error('Erro:', e);
+      setConnectionStatus('error', 'Sem conexão');
+      showToast('Erro ao carregar dados', true);
+      return false;
+    }
+  }
+
+  async function saveRecord(date, seller, dataObj) {
+    try {
+      setSaveStatus('saving');
+      const payload = {
+        data: date, vendedor: seller,
+        diagnosticos: dataObj.diagnosticos || 0,
+        plano_acao: dataObj.planoAcao || 0,
+        vendas: dataObj.vendas || 0,
+        valor: dataObj.valor || 0,
+        atualizado_por: state.currentUser,
+        atualizado_em: new Date().toISOString()
+      };
+      const { error } = await db.from('lancamentos').upsert(payload, { onConflict: 'data,vendedor' });
+      if (error) throw error;
+      setSaveStatus('saved');
+      return true;
+    } catch (e) {
+      console.error('Erro:', e);
+      setSaveStatus('error');
+      showToast('Erro ao salvar', true);
+      return false;
+    }
+  }
+
+  async function saveDay() {
+    const dayData = getDayData(state.currentDate);
+    const promises = [];
+    SELLERS.forEach(s => {
+      if (canEdit(s.id)) promises.push(saveRecord(state.currentDate, s.id, dayData[s.id]));
+    });
+    const results = await Promise.all(promises);
+    if (results.every(r => r)) {
+      showToast('Lançamento salvo com sucesso');
+      return true;
+    }
+    return false;
+  }
+
+  // ============================================
+  // REALTIME
+  // ============================================
+  function setupRealtime() {
+    if (realtimeChannel) db.removeChannel(realtimeChannel);
+    realtimeChannel = db.channel('lancamentos_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lancamentos' },
+        (payload) => handleRealtimeUpdate(payload))
+      .subscribe();
+  }
+
+  function handleRealtimeUpdate(payload) {
+    const row = payload.new || payload.old;
+    if (!row) return;
+    if (row.atualizado_por === state.currentUser) return;
+
+    if (payload.eventType === 'DELETE') {
+      if (state.records[row.data]) delete state.records[row.data][row.vendedor];
+    } else {
+      if (!state.records[row.data]) state.records[row.data] = {};
+      state.records[row.data][row.vendedor] = {
+        diagnosticos: row.diagnosticos || 0,
+        planoAcao: row.plano_acao || 0,
+        vendas: row.vendas || 0,
+        valor: parseFloat(row.valor) || 0
+      };
+    }
+
+    const sellerName = SELLERS.find(s => s.id === row.vendedor)?.name || row.vendedor.toUpperCase();
+    showLiveUpdate(`${sellerName} atualizou ${formatBR(parseDate(row.data))}`);
+    renderInputs();
+    renderAll();
+  }
+
+  function showLiveUpdate(text) {
+    const el = document.getElementById('liveUpdate');
+    document.getElementById('liveUpdateText').textContent = text;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  // ============================================
+  // STATUS
+  // ============================================
+  function setConnectionStatus(status, text) {
+    const el = document.getElementById('connectionStatus');
+    el.className = 'connection-status visible ' + status;
+    document.getElementById('connectionText').textContent = text;
+  }
+
+  function setSaveStatus(status) {
+    const el = document.getElementById('saveStatus');
+    el.className = 'save-status';
+    let text = 'Sincronizado';
+    if (status === 'saving') { text = 'Salvando'; el.classList.add('saving'); }
+    else if (status === 'unsaved') { text = 'Pendente'; el.classList.add('unsaved'); }
+    else if (status === 'error') { text = 'Erro'; el.classList.add('unsaved'); }
+    el.querySelector('span:last-child').textContent = text;
+  }
+
+  // ============================================
+  // RENDER
+  // ============================================
+  function renderTotals() {
+    const dates = getPeriodDates(state.currentPeriod);
+    const data = aggregateData(dates);
+    let totals = { diagnosticos: 0, planoAcao: 0, vendas: 0, valor: 0 };
+    SELLERS.forEach(s => FIELDS.forEach(f => totals[f] += data[s.id][f]));
+    const conversao = totals.diagnosticos > 0 ? (totals.vendas / totals.diagnosticos * 100) : 0;
+
+    const cards = [
+      { label: 'Diagnósticos', value: totals.diagnosticos, accent: '#ef4444' },
+      { label: 'Plano de Ação', value: totals.planoAcao, accent: '#f59e0b' },
+      { label: 'Vendas Realizadas', value: totals.vendas, accent: '#10b981' },
+      { label: 'Receita Total', value: formatCurrency(totals.valor * 1000), accent: '#ff2d6f', isAccent: true }
+    ];
+
+    document.getElementById('totalsGrid').innerHTML = cards.map(c => `
+      <div class="total-card" style="--accent-color: ${c.accent}">
+        <div class="total-label">${c.label}</div>
+        <div class="total-value ${c.isAccent ? 'accent' : ''}">${c.value}</div>
+        <div class="total-meta">
+          <span class="total-meta-badge">↗ ${conversao.toFixed(1)}%</span>
+          <span>conversão</span>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('performancePeriod').textContent = getPeriodLabel(state.currentPeriod);
+  }
+
+  function renderSellers() {
+    const dates = getPeriodDates(state.currentPeriod);
+    const data = aggregateData(dates);
+
+    document.getElementById('sellersGrid').innerHTML = SELLERS.map((s, idx) => {
+      const d = data[s.id];
+      const conversao = d.diagnosticos > 0 ? (d.vendas / d.diagnosticos * 100) : 0;
+      const ticketMedio = d.vendas > 0 ? (d.valor / d.vendas) : 0;
+      const isMe = state.currentUser === s.id;
+      const sparkData = getSparklineData(s.id);
+      
+      return `
+        <div class="seller-card ${isMe ? 'is-me' : ''}" style="--seller-color: ${s.color}">
+          <div class="seller-header">
+            <div class="seller-name-wrap">
+              <div class="seller-name">${s.name}</div>
+              <div class="seller-position">Vendedor 0${idx + 1}</div>
+            </div>
+            <div class="seller-indicator">
+              <div class="seller-status-dot"></div>
+            </div>
+          </div>
+          <div class="seller-revenue-block">
+            <div class="seller-revenue">${formatCurrency(d.valor * 1000)}</div>
+            <div class="seller-revenue-label">Receita no período</div>
+          </div>
+          <div class="seller-sparkline">${buildSparkline(sparkData, s.color)}</div>
+          <div class="seller-metrics">
+            <div class="metric-row"><span class="metric-label">Conversão</span><span class="metric-value highlight">${conversao.toFixed(1)}%</span></div>
+            <div class="metric-row"><span class="metric-label">Diagnósticos</span><span class="metric-value">${d.diagnosticos}</span></div>
+            <div class="metric-row"><span class="metric-label">Plano de Ação</span><span class="metric-value">${d.planoAcao}</span></div>
+            <div class="metric-row"><span class="metric-label">Vendas</span><span class="metric-value">${d.vendas}</span></div>
+            <div class="metric-row"><span class="metric-label">Ticket Médio</span><span class="metric-value">${ticketMedio > 0 ? formatCurrency(ticketMedio * 1000) : '—'}</span></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderInputs() {
+    const dayData = getDayData(state.currentDate);
+    document.getElementById('inputsGrid').innerHTML = SELLERS.map(s => {
+      const editable = canEdit(s.id);
+      return `
+        <div class="seller-inputs ${!editable ? 'locked' : ''}" style="--seller-color: ${s.color}; --seller-color-shadow: ${s.shadow}">
+          <div class="seller-inputs-header">
+            <span class="seller-tag" style="background: ${s.color}">${s.name}</span>
+            <span class="seller-inputs-status ${!editable ? 'locked' : ''}">${editable ? '● editável' : '🔒 apenas leitura'}</span>
+          </div>
+          <div class="inputs-row">
+            <div class="input-field">
+              <label class="input-label">Diagnóstico</label>
+              <input type="number" min="0" data-seller="${s.id}" data-field="diagnosticos" value="${dayData[s.id].diagnosticos || 0}" ${!editable ? 'disabled' : ''}>
+            </div>
+            <div class="input-field">
+              <label class="input-label">Plano Ação</label>
+              <input type="number" min="0" data-seller="${s.id}" data-field="planoAcao" value="${dayData[s.id].planoAcao || 0}" ${!editable ? 'disabled' : ''}>
+            </div>
+            <div class="input-field">
+              <label class="input-label">Vendas</label>
+              <input type="number" min="0" data-seller="${s.id}" data-field="vendas" value="${dayData[s.id].vendas || 0}" ${!editable ? 'disabled' : ''}>
+            </div>
+            <div class="input-field">
+              <label class="input-label">R$ (mil)</label>
+              <input type="number" min="0" step="0.1" data-seller="${s.id}" data-field="valor" value="${dayData[s.id].valor || 0}" ${!editable ? 'disabled' : ''}>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.querySelectorAll('.inputs-grid input:not(:disabled)').forEach(input => {
+      input.addEventListener('input', handleInputChange);
+      input.addEventListener('blur', handleInputBlur);
+    });
+    updateDayTotal();
+  }
+
+  function handleInputChange(e) {
+    const seller = e.target.dataset.seller;
+    const field = e.target.dataset.field;
+    const value = parseFloat(e.target.value) || 0;
+    if (!state.records[state.currentDate]) state.records[state.currentDate] = {};
+    if (!state.records[state.currentDate][seller]) state.records[state.currentDate][seller] = getEmptyRecord();
+    state.records[state.currentDate][seller][field] = value;
+    setSaveStatus('unsaved');
+    updateDayTotal();
+    renderTotals();
+    renderSellers();
+  }
+
+  function handleInputBlur(e) {
+    clearTimeout(saveDebounce);
+    saveDebounce = setTimeout(async () => {
+      const seller = e.target.dataset.seller;
+      const dayData = getDayData(state.currentDate);
+      await saveRecord(state.currentDate, seller, dayData[seller]);
+    }, 500);
+  }
+
+  function updateDayTotal() {
+    const dayData = getDayData(state.currentDate);
+    let total = 0;
+    SELLERS.forEach(s => total += dayData[s.id].valor);
+    document.getElementById('dayTotal').textContent = formatCurrency(total * 1000);
+  }
+
+  function renderRanking() {
+    const today = parseDate(state.currentDate);
+    const weekStart = getWeekStart(today);
+    const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+    const dates = getDatesInRange(weekStart, weekEnd);
+    const data = aggregateData(dates);
+
+    const ranking = SELLERS.map(s => ({ ...s, data: data[s.id] }))
+      .sort((a, b) => b.data.valor - a.data.valor);
+
+    document.getElementById('rankingList').innerHTML = ranking.map((r, i) => `
+      <div class="ranking-item ${i === 0 && r.data.valor > 0 ? 'gold' : ''}" style="--seller-color: ${r.color}">
+        <div class="ranking-position">0${i + 1}</div>
+        <div class="ranking-info">
+          <div class="ranking-name"><span class="ranking-dot"></span>${r.name}</div>
+          <div class="ranking-meta">${r.data.vendas} vendas · ${r.data.diagnosticos} diagnósticos</div>
+        </div>
+        <div class="ranking-value">${formatCurrency(r.data.valor * 1000)}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderWeeklyComparison() {
+    const today = parseDate(state.currentDate);
+    const weeks = [];
+    for (let i = 3; i >= 0; i--) {
+      const ref = new Date(today); ref.setDate(ref.getDate() - (i * 7));
+      const start = getWeekStart(ref);
+      const end = new Date(start); end.setDate(start.getDate() + 6);
+      const dates = getDatesInRange(start, end);
+      const data = aggregateData(dates);
+      let total = 0;
+      SELLERS.forEach(s => total += data[s.id].valor);
+      weeks.push({
+        label: i === 0 ? 'Atual' : `−${i} sem`,
+        range: `${String(start.getDate()).padStart(2,'0')}/${String(start.getMonth()+1).padStart(2,'0')}`,
+        total
+      });
+    }
+
+    const maxValue = Math.max(...weeks.map(w => w.total), 1);
+    document.getElementById('weeklyComparison').innerHTML = weeks.map(w => {
+      const pct = (w.total / maxValue) * 100;
+      return `
+        <div class="week-bar">
+          <div>
+            <div class="week-label">${w.label}</div>
+            <div class="week-label-period">${w.range}</div>
+          </div>
+          <div class="week-bar-track"><div class="week-bar-fill" style="width: ${Math.max(pct, 2)}%"></div></div>
+          <div class="week-value">${formatCurrency(w.total * 1000)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderAll() {
+    renderTotals();
+    renderSellers();
+    renderRanking();
+    renderWeeklyComparison();
+  }
+
+  // ============================================
+  // ACTIONS
+  // ============================================
+  function showToast(message, isError = false) {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  async function handleSave() {
+    document.getElementById('saveBtn').disabled = true;
+    await saveDay();
+    document.getElementById('saveBtn').disabled = false;
+  }
+
+  function handleCopy() {
+    const dayData = getDayData(state.currentDate);
+    let total = { diagnosticos: 0, planoAcao: 0, vendas: 0, valor: 0 };
+    let text = `📊 RESUMO ${formatBR(parseDate(state.currentDate))}\n\n`;
+    SELLERS.forEach(s => {
+      const d = dayData[s.id];
+      text += `${s.name.toUpperCase()}: ${d.diagnosticos} diag · ${d.planoAcao} plano · ${d.vendas} vendas · ${formatCurrency(d.valor * 1000)}\n`;
+      FIELDS.forEach(f => total[f] += d[f]);
+    });
+    text += `\n💰 TOTAL: ${total.vendas} vendas — ${formatCurrency(total.valor * 1000)}`;
+    navigator.clipboard.writeText(text).then(() => showToast('Resumo copiado'));
+  }
+
+  async function handleClear() {
+    const msg = state.currentUser === 'gestor' 
+      ? 'GESTOR: Limpar TODOS os lançamentos deste dia?'
+      : `Limpar seu lançamento (${state.currentUser.toUpperCase()}) deste dia?`;
+    if (!confirm(msg)) return;
+
+    const targets = state.currentUser === 'gestor' ? SELLERS.map(s => s.id) : [state.currentUser];
+    try {
+      for (const seller of targets) {
+        if (state.records[state.currentDate]) state.records[state.currentDate][seller] = getEmptyRecord();
+        await saveRecord(state.currentDate, seller, getEmptyRecord());
+      }
+      renderInputs();
+      renderAll();
+      showToast('Dia limpo');
+    } catch (e) {
+      showToast('Erro ao limpar', true);
+    }
+  }
+
+  function changeDate(newDate) {
+    state.currentDate = newDate;
+    document.getElementById('dateInput').value = newDate;
+    renderInputs();
+    renderAll();
+    setSaveStatus('saved');
+  }
+
+  function navigateDay(offset) {
+    const d = parseDate(state.currentDate);
+    d.setDate(d.getDate() + offset);
+    changeDate(formatDate(d));
+  }
+
+  function setPeriod(period) {
+    state.currentPeriod = period;
+    document.querySelectorAll('.period-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.period === period);
+    });
+    renderTotals();
+    renderSellers();
+  }
+
+  // ============================================
+  // LOGIN
+  // ============================================
+  function selectUser(userId) {
+    state.currentUser = userId;
+    localStorage.setItem('dashboard_user', userId);
+    
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('mainContainer').style.display = 'block';
+    
+    const isGestor = userId === 'gestor';
+    const seller = SELLERS.find(s => s.id === userId);
+    const displayName = isGestor ? 'Gestor' : seller.name;
+    const avatarLetter = isGestor ? 'G' : seller.name.charAt(0);
+    const userColor = isGestor ? '#8b5cf6' : seller.color;
+    
+    document.getElementById('currentUserName').textContent = displayName;
+    document.getElementById('currentUserAvatar').textContent = avatarLetter;
+    document.getElementById('currentUser').style.setProperty('--user-color', userColor);
+    
+    initApp();
+  }
+
+  function logout() {
+    localStorage.removeItem('dashboard_user');
+    location.reload();
+  }
+
+  // ============================================
+  // INIT
+  // ============================================
+  async function initApp() {
+    await fetchAllRecords();
+    setupRealtime();
+    renderInputs();
+    renderAll();
+  }
+
+  function init() {
+    document.querySelectorAll('.login-seller-btn, .login-guest-btn').forEach(btn => {
+      btn.addEventListener('click', () => selectUser(btn.dataset.user));
+    });
+
+    const savedUser = localStorage.getItem('dashboard_user');
+    if (savedUser) selectUser(savedUser);
+
+    document.getElementById('dateInput').value = state.currentDate;
+    document.getElementById('dateInput').addEventListener('change', e => changeDate(e.target.value));
+    document.getElementById('prevDay').addEventListener('click', () => navigateDay(-1));
+    document.getElementById('nextDay').addEventListener('click', () => navigateDay(1));
+    document.getElementById('todayBtn').addEventListener('click', () => changeDate(formatDate(new Date())));
+    document.getElementById('saveBtn').addEventListener('click', handleSave);
+    document.getElementById('copyBtn').addEventListener('click', handleCopy);
+    document.getElementById('clearBtn').addEventListener('click', handleClear);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    document.querySelectorAll('.period-btn').forEach(b => {
+      b.addEventListener('click', () => setPeriod(b.dataset.period));
+    });
+
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); handleSave(); }
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
 
