@@ -23,23 +23,23 @@
     --text-2: #a1a1aa;
     --text-3: #71717a;
     --text-4: #52525b;
-    --diag: #06b6d4;
-    --diag-soft: #06b6d422;
-    --plano: #f59e0b;
-    --plano-soft: #f59e0b22;
-    --venda: #10b981;
-    --venda-soft: #10b98122;
+    --diag: #fb7185;
+    --diag-soft: #fb718522;
+    --plano: #e11d48;
+    --plano-soft: #e11d4822;
+    --venda: #9f1239;
+    --venda-soft: #9f123922;
     --pink: #ff2d6f;
     --pink-soft: #ff2d6f33;
     --pink-deep: #c91860;
-    --red: #ef4444;
-    --red-soft: #ef444422;
-    --violet: #8b5cf6;
-    --violet-soft: #8b5cf622;
-    --gab-color: #ef4444;
-    --mau-color: #f59e0b;
-    --gi-color: #10b981;
-    --gui-color: #8b5cf6;
+    --red: #fecdd3;
+    --red-soft: #fecdd322;
+    --violet: #f43f5e;
+    --violet-soft: #f43f5e22;
+    --gab-color: #fecdd3;
+    --mau-color: #e11d48;
+    --gi-color: #9f1239;
+    --gui-color: #f43f5e;
     --font-display: 'Fraunces', serif;
     --font-body: 'Inter Tight', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
@@ -608,7 +608,7 @@
   }
   .save-status.saving {
     background: var(--diag-soft);
-    border-color: rgba(6, 182, 212, 0.25); color: var(--diag);
+    border-color: rgba(251, 113, 133, 0.25); color: var(--diag);
   }
   .save-status.saving .save-status-dot {
     background: var(--diag); box-shadow: 0 0 8px var(--diag);
@@ -1079,7 +1079,7 @@
     transition: all 0.2s;
     display: flex; align-items: center; justify-content: center; gap: 8px;
   }
-  .btn-copy:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4); }
+  .btn-copy:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(251, 113, 133, 0.4); }
   .btn-copy-secondary {
     background: var(--bg-3); border: 1px solid var(--border-2);
     color: var(--text-2); padding: 14px 24px;
@@ -1328,10 +1328,10 @@
   const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const SELLERS = [
-    { id: 'gab', name: 'Gab', color: '#ef4444' },
-    { id: 'mau', name: 'Mau', color: '#f59e0b' },
-    { id: 'gi',  name: 'Gi',  color: '#10b981' },
-    { id: 'gui', name: 'Gui', color: '#8b5cf6' }
+    { id: 'gab', name: 'Gab', color: '#fecdd3' },
+    { id: 'mau', name: 'Mau', color: '#e11d48' },
+    { id: 'gi',  name: 'Gi',  color: '#9f1239' },
+    { id: 'gui', name: 'Gui', color: '#f43f5e' }
   ];
 
   const FIELDS = ['diagnosticos', 'planoAcao', 'vendas', 'valor'];
@@ -1593,9 +1593,9 @@
   function renderFunnel() {
     const week = sumTotals(aggregateData(getWeekDates()));
     const stages = [
-      { name: 'Diagnóstico', sub: 'Primeira reunião · descoberta', count: week.diagnosticos, color: 'var(--diag)', light: '#22d3ee', shadow: 'rgba(6, 182, 212, 0.4)' },
-      { name: 'Plano de Ação', sub: 'Apresentação da proposta', count: week.planoAcao, color: 'var(--plano)', light: '#fbbf24', shadow: 'rgba(245, 158, 11, 0.4)' },
-      { name: 'Vendas', sub: 'Fechamento concluído', count: week.vendas, color: 'var(--venda)', light: '#34d399', shadow: 'rgba(16, 185, 129, 0.4)' }
+      { name: 'Diagnóstico', sub: 'Primeira reunião · descoberta', count: week.diagnosticos, color: 'var(--diag)', light: '#fda4af', shadow: 'rgba(251, 113, 133, 0.4)' },
+      { name: 'Plano de Ação', sub: 'Apresentação da proposta', count: week.planoAcao, color: 'var(--plano)', light: '#fb7185', shadow: 'rgba(225, 29, 72, 0.4)' },
+      { name: 'Vendas', sub: 'Fechamento concluído', count: week.vendas, color: 'var(--venda)', light: '#e11d48', shadow: 'rgba(159, 18, 57, 0.4)' }
     ];
     const max = Math.max(...stages.map(s => s.count), 1);
 
@@ -2100,7 +2100,7 @@
     const seller = SELLERS.find(s => s.id === userId);
     const displayName = isGestor ? 'Gestor' : seller.name;
     const avatarLetter = isGestor ? 'G' : seller.name.charAt(0);
-    const userColor = isGestor ? '#06b6d4' : seller.color;
+    const userColor = isGestor ? '#fb7185' : seller.color;
     document.getElementById('currentUserName').textContent = displayName;
     document.getElementById('currentUserAvatar').textContent = avatarLetter;
     document.getElementById('currentUser').style.setProperty('--user-color', userColor);
@@ -2183,7 +2183,7 @@
         if (e.key === 'Escape') closePreview();
       });
       
-      console.log('🟢 [VENDE-C] Dashboard iniciado com sucesso! Versão: 2026-06-01-v6');
+      console.log('🟢 [VENDE-C] Dashboard iniciado com sucesso! Versão: 2026-06-02-v7-rose');
     } catch (err) {
       console.error('❌ [VENDE-C] Erro fatal na inicialização:', err);
       alert('Erro ao iniciar dashboard. Abre o console (F12) e me manda o erro.');
