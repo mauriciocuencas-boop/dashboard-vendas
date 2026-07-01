@@ -1914,14 +1914,25 @@
     text += `📆 ${formatBR(weekStart)} a ${formatBR(weekEnd)}\n`;
     text += `━━━━━━━━━━━━━━━━━━━\n\n`;
     
-    text += `🎯 *NÚMEROS DA EQUIPE*\n\n`;
+    text += `👥 *RESULTADO POR VENDEDOR*\n\n`;
+    SELLERS.forEach(s => {
+      const d = data[s.id];
+      const r = d.diagnosticos + d.planoAcao;
+      text += `*${s.name.toUpperCase()}*\n`;
+      text += `📞 ${r} reunião${r !== 1 ? 'ões' : ''} · 🟢 ${d.vendas} venda${d.vendas !== 1 ? 's' : ''}`;
+      if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
+      text += `\n\n`;
+    });
+
+    text += `━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🎯 *TOTAL DA EQUIPE*\n\n`;
     text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
     text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
     text += `📞 Reuniões totais: *${totalReunioes}*\n`;
     text += `🟢 Vendas: *${totals.vendas}*\n`;
     if (totals.valor > 0) text += `💰 Faturamento: *${formatBRMoney(totals.valor * 1000)}*\n`;
     if (ticketMedio > 0) text += `💎 Ticket médio: *${formatBRMoney(ticketMedio * 1000)}*\n`;
-    
+
     text += `\n━━━━━━━━━━━━━━━━━━━\n`;
     text += `📈 *MÉDIA DIÁRIA (${daysWorked} dia${daysWorked !== 1 ? 's' : ''})*\n\n`;
     text += `🔵 ${mediaDiag} diagnósticos/dia\n`;
@@ -1965,14 +1976,25 @@
     text += `📅 ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}\n`;
     text += `━━━━━━━━━━━━━━━━━━━\n\n`;
     
-    text += `🎯 *RESULTADO CONSOLIDADO*\n\n`;
+    text += `👥 *RESULTADO POR VENDEDOR*\n\n`;
+    SELLERS.forEach(s => {
+      const d = data[s.id];
+      const r = d.diagnosticos + d.planoAcao;
+      text += `*${s.name.toUpperCase()}*\n`;
+      text += `📞 ${r} reunião${r !== 1 ? 'ões' : ''} · 🟢 ${d.vendas} venda${d.vendas !== 1 ? 's' : ''}`;
+      if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
+      text += `\n\n`;
+    });
+
+    text += `━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🎯 *TOTAL DA EQUIPE*\n\n`;
     text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
     text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
     text += `📞 Reuniões totais: *${totalReunioes}*\n`;
     text += `🟢 Vendas fechadas: *${totals.vendas}*\n`;
     if (totals.valor > 0) text += `💰 *Faturamento: ${formatBRMoney(totals.valor * 1000)}*\n`;
     if (ticketMedio > 0) text += `💎 Ticket médio: *${formatBRMoney(ticketMedio * 1000)}*\n`;
-    
+
     text += `\n━━━━━━━━━━━━━━━━━━━\n`;
     text += `📈 *MÉDIAS DIÁRIAS (${daysWorked} dia${daysWorked !== 1 ? 's' : ''})*\n\n`;
     text += `🔵 ${mediaDiag} diagnósticos/dia\n`;
