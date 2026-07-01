@@ -1919,7 +1919,9 @@
       const d = data[s.id];
       const r = d.diagnosticos + d.planoAcao;
       text += `*${s.name.toUpperCase()}*\n`;
-      text += `📞 ${r} reunião${r !== 1 ? 'ões' : ''} · 🟢 ${d.vendas} venda${d.vendas !== 1 ? 's' : ''}`;
+      text += `🔵 ${d.diagnosticos} Diagnóstico${d.diagnosticos !== 1 ? 's' : ''}\n`;
+      text += `🟡 ${d.planoAcao} Plano${d.planoAcao !== 1 ? 's' : ''} de Ação\n`;
+      text += `🟢 ${d.vendas} Venda${d.vendas !== 1 ? 's' : ''}`;
       if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
       text += `\n\n`;
     });
@@ -1981,7 +1983,9 @@
       const d = data[s.id];
       const r = d.diagnosticos + d.planoAcao;
       text += `*${s.name.toUpperCase()}*\n`;
-      text += `📞 ${r} reunião${r !== 1 ? 'ões' : ''} · 🟢 ${d.vendas} venda${d.vendas !== 1 ? 's' : ''}`;
+      text += `🔵 ${d.diagnosticos} Diagnóstico${d.diagnosticos !== 1 ? 's' : ''}\n`;
+      text += `🟡 ${d.planoAcao} Plano${d.planoAcao !== 1 ? 's' : ''} de Ação\n`;
+      text += `🟢 ${d.vendas} Venda${d.vendas !== 1 ? 's' : ''}`;
       if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
       text += `\n\n`;
     });
