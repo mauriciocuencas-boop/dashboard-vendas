@@ -1213,6 +1213,143 @@
     padding: 24px 20px;
     text-align: center;
   }
+
+  /* DESAFIO DAS VENDAS */
+  .challenges-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+  .challenge-card {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 16px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 210px;
+    transition: box-shadow 0.2s;
+  }
+  .challenge-card.empty {
+    background: var(--bg-0);
+    border: 1px dashed var(--border-2);
+  }
+  .challenge-card.cobrar {
+    border-color: var(--pink);
+    box-shadow: 0 0 0 2px var(--pink-soft);
+  }
+  .challenge-seller-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--sc, var(--pink));
+  }
+  .challenge-empty-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-new-challenge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+    background: var(--bg-2);
+    border: 1px dashed var(--border-2);
+    border-radius: 8px;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .btn-new-challenge:hover { color: var(--pink); border-color: var(--pink); background: var(--pink-soft); }
+  .challenge-vs-row { display: flex; align-items: center; gap: 8px; }
+  .challenge-vs-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .challenge-opponent {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--sc, var(--pink));
+  }
+  .challenge-field { display: flex; flex-direction: column; gap: 2px; }
+  .challenge-field-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-4);
+  }
+  .challenge-field-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    word-break: break-word;
+  }
+  .challenge-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-1);
+  }
+  .challenge-status-dot {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-3);
+  }
+  .challenge-status-dot.cobrar { color: var(--pink); }
+  .btn-challenge-action {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--pink);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: 0.04em;
+  }
+  .btn-challenge-action:hover { opacity: 0.82; }
+  .btn-challenge-action.encerrar { background: var(--bg-3); color: var(--text-3); }
+  .challenge-form { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .challenge-input {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text-1);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .challenge-input:focus { border-color: var(--pink); }
+  .challenge-form-btns { display: flex; gap: 8px; }
+  .btn-challenge-cancel {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--bg-3);
+    color: var(--text-3);
+    border: 1px solid var(--border-2);
+    border-radius: 6px;
+    padding: 5px 11px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -1362,6 +1499,12 @@
       </div>
     </div>
   </div>
+
+  <div class="section-meta">
+    <div class="section-label">Desafio das Vendas</div>
+    <div class="section-meta-info">1 desafio ativo por vendedor · feche o contrato para cobrar</div>
+  </div>
+  <div class="challenges-grid" id="challengesGrid"></div>
 
   <div class="section-meta">
     <div class="section-label">Cadência Atual</div>
@@ -1928,6 +2071,137 @@
     }).join('');
   }
 
+  // ============================================
+  // DESAFIO DAS VENDAS
+  // ============================================
+
+  const CHALLENGE_TYPES = [
+    'Almoço pago',
+    'Café da manhã',
+    'Pegar água/café por 1 dia',
+    'Elogiar em voz alta sem contexto',
+    'Meme oficial com seu rosto',
+    'Áudio de 30s de elogio no grupo',
+    'Foto de perfil por 24h (escolhida pelo vencedor)',
+    'Título/apelido por 3 dias',
+    'Discurso motivacional de 1 min',
+    'Post no LinkedIn de elogio',
+    'Pitch reverso para o time',
+    'Playlist do escritório por 1 tarde',
+    'Reunião de pé',
+    '10 flexões ao vivo',
+    'Silêncio sem reclamar por 1 dia',
+    'Ligação fria no lugar do colega',
+    'Coroa do perdedor por 1 dia',
+    'Story agradecendo pelo nome',
+  ];
+
+  let challenges = [];
+
+  async function fetchChallenges() {
+    try {
+      const { data, error } = await db
+        .from('desafios')
+        .select('*')
+        .neq('status', 'encerrado')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      challenges = data || [];
+    } catch(e) {
+      console.warn('Desafios indisponível:', e.message);
+      challenges = [];
+    }
+    renderChallenges();
+  }
+
+  async function createChallenge(challenger, challenged, cliente, tipo) {
+    const { error } = await db.from('desafios').insert({
+      challenger, challenged, cliente, tipo_desafio: tipo, status: 'ativo'
+    });
+    if (error) throw error;
+    await fetchChallenges();
+  }
+
+  async function setChallengeStatus(id, newStatus) {
+    const { error } = await db.from('desafios').update({ status: newStatus }).eq('id', id);
+    if (error) { showToast('Erro ao atualizar desafio', true); return; }
+    await fetchChallenges();
+  }
+
+  function renderChallenges() {
+    document.getElementById('challengesGrid').innerHTML = SELLERS.map(s => {
+      const c = challenges.find(ch => ch.challenger === s.id);
+      if (!c) return `
+        <div class="challenge-card empty" id="cslot-${s.id}">
+          <div class="challenge-seller-badge" style="--sc:${s.color}">${s.name.toUpperCase()}</div>
+          <div class="challenge-empty-body">
+            <button class="btn-new-challenge" onclick="openChallengeForm('${s.id}')">+ Desafiar</button>
+          </div>
+        </div>`;
+
+      const opp = SELLERS.find(x => x.id === c.challenged);
+      const isCobrar = c.status === 'cobrar';
+      return `
+        <div class="challenge-card ${c.status}" id="cslot-${s.id}">
+          <div class="challenge-seller-badge" style="--sc:${s.color}">${s.name.toUpperCase()}</div>
+          <div class="challenge-vs-row">
+            <span class="challenge-vs-label">desafia</span>
+            <span class="challenge-opponent" style="--sc:${opp?.color||'var(--pink)'}">${opp?.name.toUpperCase()||c.challenged}</span>
+          </div>
+          <div class="challenge-field">
+            <div class="challenge-field-label">Cliente</div>
+            <div class="challenge-field-value">${c.cliente}</div>
+          </div>
+          <div class="challenge-field">
+            <div class="challenge-field-label">Desafio</div>
+            <div class="challenge-field-value">${c.tipo_desafio}</div>
+          </div>
+          <div class="challenge-footer">
+            <span class="challenge-status-dot ${c.status}">${isCobrar ? '🔔 COBRAR' : '● ATIVO'}</span>
+            ${isCobrar
+              ? `<button class="btn-challenge-action encerrar" onclick="setChallengeStatus('${c.id}','encerrado')">Encerrar</button>`
+              : `<button class="btn-challenge-action" onclick="setChallengeStatus('${c.id}','cobrar')">Fechar ✓</button>`
+            }
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function openChallengeForm(sellerId) {
+    const s = SELLERS.find(x => x.id === sellerId);
+    const others = SELLERS.filter(x => x.id !== sellerId);
+    const slot = document.getElementById(`cslot-${sellerId}`);
+    slot.className = 'challenge-card ativo';
+    slot.innerHTML = `
+      <div class="challenge-seller-badge" style="--sc:${s.color}">${s.name.toUpperCase()}</div>
+      <div class="challenge-form">
+        <select id="cf-challenged-${sellerId}" class="challenge-input">
+          <option value="">Desafia quem?</option>
+          ${others.map(o => `<option value="${o.id}">${o.name}</option>`).join('')}
+        </select>
+        <input type="text" id="cf-cliente-${sellerId}" placeholder="Nome do cliente" class="challenge-input" maxlength="40" autocomplete="off">
+        <select id="cf-tipo-${sellerId}" class="challenge-input">
+          <option value="">Escolher desafio...</option>
+          ${CHALLENGE_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+        </select>
+        <div class="challenge-form-btns">
+          <button class="btn-challenge-action" onclick="submitChallenge('${sellerId}')">Criar</button>
+          <button class="btn-challenge-cancel" onclick="renderChallenges()">×</button>
+        </div>
+      </div>`;
+  }
+
+  async function submitChallenge(sellerId) {
+    const challenged = document.getElementById(`cf-challenged-${sellerId}`)?.value;
+    const cliente    = document.getElementById(`cf-cliente-${sellerId}`)?.value?.trim();
+    const tipo       = document.getElementById(`cf-tipo-${sellerId}`)?.value;
+    if (!challenged || !cliente || !tipo) { showToast('Preencha todos os campos', true); return; }
+    try {
+      await createChallenge(sellerId, challenged, cliente, tipo);
+      showToast('Desafio lançado! 🔥');
+    } catch(e) { showToast('Erro ao criar desafio', true); }
+  }
+
   function renderHistorical() {
     const today = parseDate(state.currentDate);
     const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -2010,6 +2284,7 @@
     renderRanking();
     renderWeeklyComparison();
     renderHistorical();
+    renderChallenges();
   }
 
   // ============================================
@@ -2280,6 +2555,7 @@
     setupRealtime();
     renderInputs();
     renderAll();
+    fetchChallenges();
   }
 
   function init() {
