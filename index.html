@@ -1910,46 +1910,29 @@
     const mediaReunioes = (totalReunioes / daysWorked).toFixed(1);
     const ticketMedio = totals.vendas > 0 ? (totals.valor / totals.vendas) : 0;
     
-    let text = `📊 *FECHAMENTO DA SEMANA* 📊\n`;
-    text += `📆 ${formatBR(weekStart)} a ${formatBR(weekEnd)}\n`;
+    let text = `FECHAMENTO DA SEMANA\n`;
+    text += `${formatBR(weekStart)} a ${formatBR(weekEnd)}\n`;
     text += `━━━━━━━━━━━━━━━━━━━\n\n`;
-    
-    text += `👥 *RESULTADO POR VENDEDOR*\n\n`;
+
+    text += `RESULTADO POR VENDEDOR\n\n`;
     SELLERS.forEach(s => {
       const d = data[s.id];
-      const r = d.diagnosticos + d.planoAcao;
-      text += `*${s.name.toUpperCase()}*\n`;
-      text += `🔵 ${d.diagnosticos} Diagnóstico${d.diagnosticos !== 1 ? 's' : ''}\n`;
-      text += `🟡 ${d.planoAcao} Plano${d.planoAcao !== 1 ? 's' : ''} de Ação\n`;
-      text += `🟢 ${d.vendas} Venda${d.vendas !== 1 ? 's' : ''}`;
+      text += `${s.name.toUpperCase()}\n`;
+      text += `Diagnósticos: ${d.diagnosticos}\n`;
+      text += `Planos de Ação: ${d.planoAcao}\n`;
+      text += `Vendas: ${d.vendas}`;
       if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
       text += `\n\n`;
     });
 
     text += `━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🎯 *TOTAL DA EQUIPE*\n\n`;
-    text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
-    text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
-    text += `📞 Reuniões totais: *${totalReunioes}*\n`;
-    text += `🟢 Vendas: *${totals.vendas}*\n`;
-    if (totals.valor > 0) text += `💰 Faturamento: *${formatBRMoney(totals.valor * 1000)}*\n`;
-    if (ticketMedio > 0) text += `💎 Ticket médio: *${formatBRMoney(ticketMedio * 1000)}*\n`;
-
-    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    text += `📈 *MÉDIA DIÁRIA (${daysWorked} dia${daysWorked !== 1 ? 's' : ''})*\n\n`;
-    text += `🔵 ${mediaDiag} diagnósticos/dia\n`;
-    text += `🟡 ${mediaPlano} planos/dia\n`;
-    text += `📞 ${mediaReunioes} reuniões/dia\n`;
-    
-    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🔄 *CONVERSÃO DO FUNIL*\n\n`;
-    text += `🔵→🟡 Diag → Plano: *${convDiagPlano}%*\n`;
-    text += `🟡→🟢 Plano → Venda: *${convPlanoVenda}%*\n`;
-    text += `🎯 Diag → Venda: *${convTotal}%*\n`;
-    
-    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    text += `💪 *Excelente semana, time!*\n`;
-    text += `Bora repetir e melhorar na próxima! 🚀`;
+    text += `RESULTADO CONSOLIDADO SEMANA CORP\n\n`;
+    text += `Diagnósticos: ${totals.diagnosticos}\n`;
+    text += `Planos de Ação: ${totals.planoAcao}\n`;
+    text += `Reuniões totais: ${totalReunioes}\n`;
+    text += `Vendas fechadas: ${totals.vendas}\n`;
+    if (totals.valor > 0) text += `Faturamento: ${formatBRMoney(totals.valor * 1000)}\n`;
+    if (ticketMedio > 0) text += `Ticket médio: ${formatBRMoney(ticketMedio * 1000)}`;
     
     return text;
   }
@@ -1974,46 +1957,31 @@
     const mediaReunioes = (totalReunioes / daysWorked).toFixed(1);
     const ticketMedio = totals.vendas > 0 ? (totals.valor / totals.vendas) : 0;
     
-    let text = `🏆 *FECHAMENTO DO MÊS* 🏆\n`;
-    text += `📅 ${monthName.charAt(0).toUpperCase() + monthName.slice(1)}\n`;
+    const monthLabel = monthStart.toLocaleDateString('pt-BR', { month: 'long' }).toUpperCase();
+
+    let text = `FECHAMENTO DO MÊS\n`;
+    text += `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}\n`;
     text += `━━━━━━━━━━━━━━━━━━━\n\n`;
-    
-    text += `👥 *RESULTADO POR VENDEDOR*\n\n`;
+
+    text += `RESULTADO POR VENDEDOR\n\n`;
     SELLERS.forEach(s => {
       const d = data[s.id];
-      const r = d.diagnosticos + d.planoAcao;
-      text += `*${s.name.toUpperCase()}*\n`;
-      text += `🔵 ${d.diagnosticos} Diagnóstico${d.diagnosticos !== 1 ? 's' : ''}\n`;
-      text += `🟡 ${d.planoAcao} Plano${d.planoAcao !== 1 ? 's' : ''} de Ação\n`;
-      text += `🟢 ${d.vendas} Venda${d.vendas !== 1 ? 's' : ''}`;
+      text += `${s.name.toUpperCase()}\n`;
+      text += `Diagnósticos: ${d.diagnosticos}\n`;
+      text += `Planos de Ação: ${d.planoAcao}\n`;
+      text += `Vendas: ${d.vendas}`;
       if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
       text += `\n\n`;
     });
 
     text += `━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🎯 *TOTAL DA EQUIPE*\n\n`;
-    text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
-    text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
-    text += `📞 Reuniões totais: *${totalReunioes}*\n`;
-    text += `🟢 Vendas fechadas: *${totals.vendas}*\n`;
-    if (totals.valor > 0) text += `💰 *Faturamento: ${formatBRMoney(totals.valor * 1000)}*\n`;
-    if (ticketMedio > 0) text += `💎 Ticket médio: *${formatBRMoney(ticketMedio * 1000)}*\n`;
-
-    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    text += `📈 *MÉDIAS DIÁRIAS (${daysWorked} dia${daysWorked !== 1 ? 's' : ''})*\n\n`;
-    text += `🔵 ${mediaDiag} diagnósticos/dia\n`;
-    text += `🟡 ${mediaPlano} planos/dia\n`;
-    text += `📞 ${mediaReunioes} reuniões/dia\n`;
-    
-    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🔄 *CONVERSÃO DO FUNIL*\n\n`;
-    text += `🔵→🟡 Diag → Plano: *${convDiagPlano}%*\n`;
-    text += `🟡→🟢 Plano → Venda: *${convPlanoVenda}%*\n`;
-    text += `🎯 Conversão geral: *${convTotal}%*\n`;
-    
-    text += `\n━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🚀 *MÊS FECHADO!*\n`;
-    text += `Obrigado, time! Bora pro próximo desafio! 💪`;
+    text += `RESULTADO CONSOLIDADO ${monthLabel} CORP\n\n`;
+    text += `Diagnósticos: ${totals.diagnosticos}\n`;
+    text += `Planos de Ação: ${totals.planoAcao}\n`;
+    text += `Reuniões totais: ${totalReunioes}\n`;
+    text += `Vendas fechadas: ${totals.vendas}\n`;
+    if (totals.valor > 0) text += `Faturamento: ${formatBRMoney(totals.valor * 1000)}\n`;
+    if (ticketMedio > 0) text += `Ticket médio: ${formatBRMoney(ticketMedio * 1000)}`;
     
     return text;
   }
