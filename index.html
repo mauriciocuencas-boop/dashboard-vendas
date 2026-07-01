@@ -1130,6 +1130,89 @@
   ::-webkit-scrollbar-track { background: var(--bg-0); }
   ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 5px; border: 2px solid var(--bg-0); }
   ::-webkit-scrollbar-thumb:hover { background: var(--border-3); }
+
+  /* HISTÓRICO */
+  .historical-section {
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-1);
+  }
+  .hist-table {
+    background: var(--bg-1);
+    border: 1px solid var(--border-1);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .hist-row, .hist-header-row, .hist-total-row {
+    display: grid;
+    grid-template-columns: 200px repeat(5, 1fr);
+    align-items: center;
+  }
+  .hist-header-row {
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border-2);
+    padding: 10px 20px;
+  }
+  .hist-header-row .hist-cell {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    font-weight: 600;
+  }
+  .hist-row {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-1);
+    transition: background 0.15s;
+  }
+  .hist-row:last-of-type { border-bottom: none; }
+  .hist-row:hover { background: var(--bg-2); }
+  .hist-month-label {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+  .hist-cell {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-2);
+    text-align: right;
+    padding-right: 8px;
+  }
+  .hist-cell.diag { color: var(--diag); font-weight: 600; }
+  .hist-cell.plano { color: var(--plano); font-weight: 600; }
+  .hist-cell.reunioes { color: var(--text-1); font-weight: 700; }
+  .hist-cell.money { color: var(--pink); }
+  .hist-total-row {
+    padding: 14px 20px;
+    background: var(--bg-2);
+    border-top: 2px solid var(--border-2);
+  }
+  .hist-total-row .hist-month-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+  .hist-total-row .hist-cell {
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--text-1);
+  }
+  .hist-total-row .hist-cell.diag { color: var(--diag); }
+  .hist-total-row .hist-cell.plano { color: var(--plano); }
+  .hist-total-row .hist-cell.reunioes { color: var(--pink); }
+  .hist-empty {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-4);
+    padding: 24px 20px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -1316,6 +1399,14 @@
     </div>
   </div>
 
+  <div class="historical-section">
+    <div class="section-meta">
+      <div class="section-label">Histórico Acumulado</div>
+      <div class="section-meta-info">Fechamento por mês · Diagnósticos + Planos de Ação</div>
+    </div>
+    <div class="hist-table" id="historicalTable"></div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1405,7 +1496,9 @@
     const today = parseDate(state.currentDate);
     const start = getWeekStart(today);
     const end = new Date(start); end.setDate(start.getDate() + 6);
-    return getDatesInRange(start, end);
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const effectiveStart = start < monthStart ? monthStart : start;
+    return getDatesInRange(effectiveStart, end);
   }
   function getMonthDates() {
     const today = parseDate(state.currentDate);
@@ -1835,12 +1928,88 @@
     }).join('');
   }
 
+  function renderHistorical() {
+    const today = parseDate(state.currentDate);
+    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    const byMonth = {};
+    Object.keys(state.records).forEach(dateStr => {
+      const monthKey = dateStr.slice(0, 7);
+      if (monthKey === currentMonthKey) return;
+      if (!byMonth[monthKey]) byMonth[monthKey] = { diagnosticos: 0, planoAcao: 0, vendas: 0, valor: 0 };
+      const dayRec = state.records[dateStr];
+      SELLERS.forEach(s => {
+        const r = dayRec[s.id];
+        if (r) {
+          byMonth[monthKey].diagnosticos += r.diagnosticos || 0;
+          byMonth[monthKey].planoAcao   += r.planoAcao   || 0;
+          byMonth[monthKey].vendas      += r.vendas      || 0;
+          byMonth[monthKey].valor       += r.valor       || 0;
+        }
+      });
+    });
+
+    const months = Object.keys(byMonth).sort();
+    const el = document.getElementById('historicalTable');
+
+    if (months.length === 0) {
+      el.innerHTML = '<div class="hist-empty">Nenhum mês anterior registrado.</div>';
+      return;
+    }
+
+    const totals = { diagnosticos: 0, planoAcao: 0, vendas: 0, valor: 0 };
+
+    const rows = months.map(key => {
+      const d = byMonth[key];
+      const [y, m] = key.split('-');
+      const label = new Date(Number(y), Number(m) - 1, 1)
+        .toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      const monthLabel = label.charAt(0).toUpperCase() + label.slice(1);
+      const reunioes = d.diagnosticos + d.planoAcao;
+      totals.diagnosticos += d.diagnosticos;
+      totals.planoAcao    += d.planoAcao;
+      totals.vendas       += d.vendas;
+      totals.valor        += d.valor;
+      return `
+        <div class="hist-row">
+          <div class="hist-month-label">${monthLabel}</div>
+          <div class="hist-cell diag">${d.diagnosticos}</div>
+          <div class="hist-cell plano">${d.planoAcao}</div>
+          <div class="hist-cell reunioes">${reunioes}</div>
+          <div class="hist-cell">${d.vendas}</div>
+          <div class="hist-cell money">${d.valor > 0 ? formatBRMoney(d.valor * 1000) : '—'}</div>
+        </div>`;
+    }).join('');
+
+    const totalReunioes = totals.diagnosticos + totals.planoAcao;
+
+    el.innerHTML = `
+      <div class="hist-header-row">
+        <div class="hist-cell">Mês</div>
+        <div class="hist-cell">Diagnósticos</div>
+        <div class="hist-cell">Planos de Ação</div>
+        <div class="hist-cell">Reuniões</div>
+        <div class="hist-cell">Vendas</div>
+        <div class="hist-cell">Faturamento</div>
+      </div>
+      ${rows}
+      <div class="hist-total-row">
+        <div class="hist-month-label">Total acumulado</div>
+        <div class="hist-cell diag">${totals.diagnosticos}</div>
+        <div class="hist-cell plano">${totals.planoAcao}</div>
+        <div class="hist-cell reunioes">${totalReunioes}</div>
+        <div class="hist-cell">${totals.vendas}</div>
+        <div class="hist-cell money">${totals.valor > 0 ? formatBRMoney(totals.valor * 1000) : '—'}</div>
+      </div>`;
+  }
+
   function renderAll() {
     renderCadenceCards();
     renderFunnel();
     renderSellers();
     renderRanking();
     renderWeeklyComparison();
+    renderHistorical();
   }
 
   // ============================================
