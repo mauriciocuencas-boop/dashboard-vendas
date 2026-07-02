@@ -2423,36 +2423,34 @@
     
     const totalReunioes = totals.diagnosticos + totals.planoAcao;
     
-    let text = `🔥 *RESUMO DO DIA* 🔥\n`;
-    text += `📅 ${weekDay.charAt(0).toUpperCase() + weekDay.slice(1)}, ${dateLabel}\n`;
+    let text = `RESUMO DO DIA\n`;
+    text += `${weekDay.charAt(0).toUpperCase() + weekDay.slice(1)}, ${dateLabel}\n`;
     text += `━━━━━━━━━━━━━━━━━━━\n\n`;
-    
-    text += `📊 *NÚMEROS DO DIA*\n\n`;
+
+    text += `RESULTADO POR VENDEDOR\n\n`;
     SELLERS.forEach(s => {
       const d = dayData[s.id];
       const r = d.diagnosticos + d.planoAcao;
+      text += `${s.name.toUpperCase()}\n`;
       if (r > 0 || d.vendas > 0 || d.valor > 0) {
-        text += `*${s.name.toUpperCase()}*\n`;
-        text += `🔵 ${d.diagnosticos} Diagnóstico${d.diagnosticos !== 1 ? 's' : ''}\n`;
-        text += `🟡 ${d.planoAcao} Plano${d.planoAcao !== 1 ? 's' : ''} de Ação\n`;
-        text += `🟢 ${d.vendas} Venda${d.vendas !== 1 ? 's' : ''}`;
+        text += `Diagnósticos: ${d.diagnosticos}\n`;
+        text += `Planos de Ação: ${d.planoAcao}\n`;
+        text += `Vendas: ${d.vendas}`;
         if (d.valor > 0) text += ` (${formatBRMoney(d.valor * 1000)})`;
         text += `\n\n`;
       } else {
-        text += `*${s.name.toUpperCase()}* ⚪ Sem lançamento hoje\n\n`;
+        text += `Sem lançamento hoje\n\n`;
       }
     });
-    
+
     text += `━━━━━━━━━━━━━━━━━━━\n`;
-    text += `🎯 *TOTAL DA EQUIPE*\n\n`;
-    text += `🔵 Diagnósticos: *${totals.diagnosticos}*\n`;
-    text += `🟡 Planos de Ação: *${totals.planoAcao}*\n`;
-    text += `📞 Reuniões totais: *${totalReunioes}*\n`;
-    text += `🟢 Vendas: *${totals.vendas}*\n`;
-    if (totals.valor > 0) text += `💰 Faturamento: *${formatBRMoney(totals.valor * 1000)}*\n`;
-    
-    text += `\n🚀 Bora pra cima!`;
-    
+    text += `RESULTADO CONSOLIDADO DIA CORP\n\n`;
+    text += `Diagnósticos: ${totals.diagnosticos}\n`;
+    text += `Planos de Ação: ${totals.planoAcao}\n`;
+    text += `Reuniões totais: ${totalReunioes}\n`;
+    text += `Vendas: ${totals.vendas}\n`;
+    if (totals.valor > 0) text += `Faturamento: ${formatBRMoney(totals.valor * 1000)}`;
+
     return text;
   }
   
