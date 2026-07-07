@@ -1214,6 +1214,81 @@
     text-align: center;
   }
 
+  /* RESULTADOS POR VENDEDOR */
+  .results-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-bottom: 48px;
+  }
+  .result-card {
+    background: var(--bg-1); border: 1px solid var(--border-1);
+    border-radius: 20px; padding: 24px;
+  }
+  .result-card-title {
+    font-family: var(--font-display); font-size: 20px;
+    font-weight: 400; letter-spacing: -0.02em;
+    margin-bottom: 18px; color: var(--text-1);
+  }
+  .result-seller-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border-1);
+  }
+  .result-seller-row:last-child { border-bottom: none; }
+  .result-seller-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--seller-color); flex-shrink: 0;
+  }
+  .result-seller-name {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    color: var(--text-2); width: 48px; flex-shrink: 0;
+  }
+  .result-seller-stats {
+    display: flex; gap: 14px; margin-left: auto;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+  }
+  .result-stat-diag { color: var(--diag); }
+  .result-stat-plano { color: var(--plano); }
+  .result-stat-venda { color: var(--venda); }
+  .result-week-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+  }
+  .result-week-name {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    color: var(--text-2); width: 40px; flex-shrink: 0;
+  }
+  .result-week-track {
+    flex: 1; height: 22px; background: var(--bg-2);
+    border-radius: 6px; overflow: hidden; border: 1px solid var(--border-1);
+  }
+  .result-week-fill {
+    height: 100%; background: var(--seller-color); display: block;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .result-week-value {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    color: var(--text-1); width: 28px; text-align: right; flex-shrink: 0;
+  }
+  .result-revenue-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border-1);
+  }
+  .result-revenue-row:last-of-type { border-bottom: none; }
+  .result-revenue-name {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    color: var(--text-2); display: flex; align-items: center; gap: 8px;
+  }
+  .result-revenue-value {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+    color: var(--text-1);
+  }
+  .result-revenue-total {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding-top: 14px; border-top: 2px solid var(--pink);
+  }
+  .result-revenue-total .result-revenue-name { font-size: 13px; color: var(--text-1); }
+  .result-revenue-total .result-revenue-value {
+    font-family: var(--font-display); font-size: 22px; color: var(--pink);
+  }
+
 </style>
 </head>
 <body>
@@ -1361,6 +1436,25 @@
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="section-meta">
+    <div class="section-label">Resultados por Vendedor</div>
+    <div class="section-meta-info" id="resultsMeta">—</div>
+  </div>
+  <div class="results-grid">
+    <div class="result-card">
+      <div class="result-card-title">Mês por Vendedor</div>
+      <div id="resultsMonthly"></div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-title">Comparativo da Semana</div>
+      <div id="resultsWeekChart"></div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-title">Receita do Mês</div>
+      <div id="resultsRevenue"></div>
     </div>
   </div>
 
@@ -1890,6 +1984,11 @@
     }).join('');
   }
 
+  function renderResultsBand() {
+    const monthLabel = parseDate(state.currentDate).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    document.getElementById('resultsMeta').textContent = `Atualizado · ${monthLabel}`;
+  }
+
   function renderWeeklyComparison() {
     const today = parseDate(state.currentDate);
     const weeks = [];
@@ -2011,6 +2110,7 @@
     renderRanking();
     renderWeeklyComparison();
     renderHistorical();
+    renderResultsBand();
   }
 
   // ============================================
