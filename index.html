@@ -1248,8 +1248,23 @@
   .result-stat-diag { color: var(--diag); }
   .result-stat-plano { color: var(--plano); }
   .result-stat-venda { color: var(--venda); }
-  .result-week-row {
-    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+  .result-total-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding-top: 14px; border-top: 2px solid var(--pink);
+  }
+  .result-total-label {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-1);
+  }
+  .result-total-stats {
+    display: flex; gap: 14px; margin-left: auto;
+    font-family: var(--font-mono); font-size: 13px; font-weight: 800;
+  }
+  .result-week-row { padding: 10px 0; }
+  .result-week-top {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+  }
+  .result-week-bar-line {
+    display: flex; align-items: center; gap: 10px;
   }
   .result-week-name {
     font-family: var(--font-mono); font-size: 12px; font-weight: 700;
@@ -1995,7 +2010,7 @@
 
   function renderResultsMonthly() {
     const month = aggregateData(getMonthDates());
-    document.getElementById('resultsMonthly').innerHTML = SELLERS.map(s => {
+    const rows = SELLERS.map(s => {
       const d = month[s.id];
       return `
         <div class="result-seller-row">
@@ -2008,20 +2023,53 @@
           </span>
         </div>`;
     }).join('');
+    const total = sumTotals(month);
+    const totalRow = `
+      <div class="result-total-row">
+        <span class="result-total-label">Total do mês</span>
+        <span class="result-total-stats">
+          <span class="result-stat-diag">${total.diagnosticos}</span>
+          <span class="result-stat-plano">${total.planoAcao}</span>
+          <span class="result-stat-venda">${total.vendas}</span>
+        </span>
+      </div>`;
+    document.getElementById('resultsMonthly').innerHTML = rows + totalRow;
   }
 
   function renderResultsWeekChart() {
     const week = aggregateData(getWeekDates());
     const ranked = rankSellersByWeekTotal(SELLERS, week);
-    document.getElementById('resultsWeekChart').innerHTML = ranked.map(r => `
-      <div class="result-week-row">
-        <span class="result-week-name">${r.name}</span>
-        <span class="result-week-track">
-          <span class="result-week-fill" style="--seller-color: ${r.color}; width: ${r.pct}%"></span>
+    const rows = ranked.map(r => {
+      const d = week[r.id];
+      return `
+        <div class="result-week-row">
+          <div class="result-week-top">
+            <span class="result-week-name">${r.name}</span>
+            <span class="result-seller-stats">
+              <span class="result-stat-diag">${d.diagnosticos}</span>
+              <span class="result-stat-plano">${d.planoAcao}</span>
+              <span class="result-stat-venda">${d.vendas}</span>
+            </span>
+          </div>
+          <div class="result-week-bar-line">
+            <span class="result-week-track">
+              <span class="result-week-fill" style="--seller-color: ${r.color}; width: ${r.pct}%"></span>
+            </span>
+            <span class="result-week-value">${r.total}</span>
+          </div>
+        </div>`;
+    }).join('');
+    const total = sumTotals(week);
+    const totalRow = `
+      <div class="result-total-row">
+        <span class="result-total-label">Total da semana</span>
+        <span class="result-total-stats">
+          <span class="result-stat-diag">${total.diagnosticos}</span>
+          <span class="result-stat-plano">${total.planoAcao}</span>
+          <span class="result-stat-venda">${total.vendas}</span>
         </span>
-        <span class="result-week-value">${r.total}</span>
-      </div>
-    `).join('');
+      </div>`;
+    document.getElementById('resultsWeekChart').innerHTML = rows + totalRow;
   }
 
   function renderResultsRevenue() {
