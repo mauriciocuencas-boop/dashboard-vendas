@@ -1586,6 +1586,15 @@
     SELLERS.forEach(s => FIELDS.forEach(f => t[f] += data[s.id][f]));
     return t;
   }
+  function rankSellersByWeekTotal(sellers, weekAggregated) {
+    const ranked = sellers.map(s => {
+      const d = weekAggregated[s.id] || { diagnosticos: 0, planoAcao: 0, vendas: 0 };
+      const total = d.diagnosticos + d.planoAcao + d.vendas;
+      return { id: s.id, name: s.name, color: s.color, total };
+    }).sort((a, b) => b.total - a.total);
+    const maxTotal = Math.max(...ranked.map(r => r.total), 1);
+    return ranked.map(r => ({ ...r, pct: Math.round((r.total / maxTotal) * 100) }));
+  }
   function getTodayDates() { return [state.currentDate]; }
   function getWeekDates() {
     const today = parseDate(state.currentDate);
@@ -1984,7 +1993,60 @@
     }).join('');
   }
 
+  function renderResultsMonthly() {
+    const month = aggregateData(getMonthDates());
+    document.getElementById('resultsMonthly').innerHTML = SELLERS.map(s => {
+      const d = month[s.id];
+      return `
+        <div class="result-seller-row">
+          <span class="result-seller-dot" style="--seller-color: ${s.color}"></span>
+          <span class="result-seller-name">${s.name}</span>
+          <span class="result-seller-stats">
+            <span class="result-stat-diag">${d.diagnosticos}</span>
+            <span class="result-stat-plano">${d.planoAcao}</span>
+            <span class="result-stat-venda">${d.vendas}</span>
+          </span>
+        </div>`;
+    }).join('');
+  }
+
+  function renderResultsWeekChart() {
+    const week = aggregateData(getWeekDates());
+    const ranked = rankSellersByWeekTotal(SELLERS, week);
+    document.getElementById('resultsWeekChart').innerHTML = ranked.map(r => `
+      <div class="result-week-row">
+        <span class="result-week-name">${r.name}</span>
+        <span class="result-week-track">
+          <span class="result-week-fill" style="--seller-color: ${r.color}; width: ${r.pct}%"></span>
+        </span>
+        <span class="result-week-value">${r.total}</span>
+      </div>
+    `).join('');
+  }
+
+  function renderResultsRevenue() {
+    const month = aggregateData(getMonthDates());
+    const totalValor = sumTotals(month).valor;
+    const rows = SELLERS.map(s => `
+      <div class="result-revenue-row">
+        <span class="result-revenue-name">
+          <span class="result-seller-dot" style="--seller-color: ${s.color}"></span>${s.name}
+        </span>
+        <span class="result-revenue-value">${formatCurrency(month[s.id].valor * 1000)}</span>
+      </div>
+    `).join('');
+    const totalRow = `
+      <div class="result-revenue-total">
+        <span class="result-revenue-name">Total do time</span>
+        <span class="result-revenue-value">${formatCurrency(totalValor * 1000)}</span>
+      </div>`;
+    document.getElementById('resultsRevenue').innerHTML = rows + totalRow;
+  }
+
   function renderResultsBand() {
+    renderResultsMonthly();
+    renderResultsWeekChart();
+    renderResultsRevenue();
     const monthLabel = parseDate(state.currentDate).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     document.getElementById('resultsMeta').textContent = `Atualizado · ${monthLabel}`;
   }
