@@ -1089,6 +1089,18 @@
   }
   .btn-copy-secondary:hover { border-color: var(--border-3); color: var(--text-1); }
 
+  .section-meta-right { display: flex; align-items: center; gap: 12px; }
+  .btn-copy-results {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+    color: var(--pink); background: var(--pink-soft);
+    border: 1px solid var(--pink); border-radius: 6px;
+    padding: 5px 10px; cursor: pointer;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .btn-copy-results:hover { background: var(--pink); color: #fff; }
+
   /* RESPONSIVE */
   @media (max-width: 1200px) {
     .cadence-grid { grid-template-columns: 1fr 1fr; }
@@ -1392,6 +1404,28 @@
   </div>
 
   <div class="section-meta">
+    <div class="section-label">Resultados por Vendedor</div>
+    <div class="section-meta-right">
+      <div class="section-meta-info" id="resultsMeta">—</div>
+      <button class="btn-copy-results" id="reportResultsBtn">📋 Copiar Resultados</button>
+    </div>
+  </div>
+  <div class="results-grid">
+    <div class="result-card">
+      <div class="result-card-title">Mês por Vendedor</div>
+      <div id="resultsMonthly"></div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-title">Comparativo da Semana</div>
+      <div id="resultsWeekChart"></div>
+    </div>
+    <div class="result-card">
+      <div class="result-card-title">Receita do Mês</div>
+      <div id="resultsRevenue"></div>
+    </div>
+  </div>
+
+  <div class="section-meta">
     <div class="section-label">Lançamento do Dia</div>
     <div class="section-meta-info">registro diário</div>
   </div>
@@ -1451,25 +1485,6 @@
           </button>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="section-meta">
-    <div class="section-label">Resultados por Vendedor</div>
-    <div class="section-meta-info" id="resultsMeta">—</div>
-  </div>
-  <div class="results-grid">
-    <div class="result-card">
-      <div class="result-card-title">Mês por Vendedor</div>
-      <div id="resultsMonthly"></div>
-    </div>
-    <div class="result-card">
-      <div class="result-card-title">Comparativo da Semana</div>
-      <div id="resultsWeekChart"></div>
-    </div>
-    <div class="result-card">
-      <div class="result-card-title">Receita do Mês</div>
-      <div id="resultsRevenue"></div>
     </div>
   </div>
 
@@ -1953,6 +1968,7 @@
     renderCadenceCards();
     renderFunnel();
     renderSellers();
+    renderResultsBand();
   }
 
   function handleInputBlur(e) {
@@ -2226,7 +2242,45 @@
   // ============================================
   // 🔥 GERADORES DE RELATÓRIO PRO WHATSAPP
   // ============================================
-  
+
+  function generateResultsReport() {
+    const month = aggregateData(getMonthDates());
+    const week = aggregateData(getWeekDates());
+    const monthTotals = sumTotals(month);
+    const weekTotals = sumTotals(week);
+    const monthLabel = parseDate(state.currentDate).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+
+    let text = `RESULTADOS POR VENDEDOR\n`;
+    text += `${monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    text += `MÊS POR VENDEDOR\n\n`;
+    SELLERS.forEach(s => {
+      const d = month[s.id];
+      text += `${s.name.toUpperCase()}\n`;
+      text += `Diagnósticos: ${d.diagnosticos} · Planos de Ação: ${d.planoAcao} · Vendas: ${d.vendas}\n\n`;
+    });
+    text += `Total do mês: ${monthTotals.diagnosticos} diag · ${monthTotals.planoAcao} plano · ${monthTotals.vendas} vendas\n\n`;
+
+    text += `━━━━━━━━━━━━━━━━━━━\n`;
+    text += `COMPARATIVO DA SEMANA\n\n`;
+    SELLERS.forEach(s => {
+      const d = week[s.id];
+      text += `${s.name.toUpperCase()}\n`;
+      text += `Diagnósticos: ${d.diagnosticos} · Planos de Ação: ${d.planoAcao} · Vendas: ${d.vendas}\n\n`;
+    });
+    text += `Total da semana: ${weekTotals.diagnosticos} diag · ${weekTotals.planoAcao} plano · ${weekTotals.vendas} vendas\n\n`;
+
+    text += `━━━━━━━━━━━━━━━━━━━\n`;
+    text += `RECEITA DO MÊS\n\n`;
+    SELLERS.forEach(s => {
+      text += `${s.name.toUpperCase()}: ${formatBRMoney(month[s.id].valor * 1000)}\n`;
+    });
+    text += `\nTotal do time: ${formatBRMoney(monthTotals.valor * 1000)}`;
+
+    return text;
+  }
+
   function generateDayReport() {
     const dayData = getDayData(state.currentDate);
     const dateObj = parseDate(state.currentDate);
@@ -2392,6 +2446,11 @@
       titleText = 'Resumo do Mês';
       tagText = '🏆 FECHAMENTO MENSAL';
       colorVar = 'var(--venda)';
+    } else if (type === 'results') {
+      report = generateResultsReport();
+      titleText = 'Resultados por Vendedor';
+      tagText = '📋 RESULTADOS POR VENDEDOR';
+      colorVar = 'var(--pink)';
     }
     
     title.textContent = titleText;
@@ -2533,6 +2592,9 @@
       
       const reportMonthBtn = document.getElementById('reportMonthBtn');
       if (reportMonthBtn) reportMonthBtn.addEventListener('click', () => openPreview('month'));
+
+      const reportResultsBtn = document.getElementById('reportResultsBtn');
+      if (reportResultsBtn) reportResultsBtn.addEventListener('click', () => openPreview('results'));
       
       const previewClose = document.getElementById('previewClose');
       if (previewClose) previewClose.addEventListener('click', closePreview);
