@@ -1,0 +1,18 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx3Y21xZHJldHV4cHl3c3djc3JpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE0MTQsImV4cCI6MjA5NTY2NzQxNH0.fXvfGdhMEwyB-8wjGyisjt6QA4FKHqevEi73eBrve4A
+        run: |
+          curl -sf "https://lwcmqdretuxpywswcsri.supabase.co/rest/v1/lancamentos?select=data&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY"
